@@ -47,7 +47,7 @@ public class HistoryDetail extends Activity {
     private static final int MIN_Y = 30000;//Minimum PPG data value
     private static final int MAX_Y = 50000;//Maximum PPG data value
     private static final int MIN_X = 0;
-    private static final int MAX_X = 20000;
+    private static final int MAX_X = 40000;
     private GraphicalView mGraphView;
     private LineGraphView mLineGraph;
     private ViewGroup mHistLayout;
@@ -140,7 +140,9 @@ public class HistoryDetail extends Activity {
                 for( int counter = 0; counter < dataArray.length; counter++){
                     String ppgSample = dataArray[counter].trim();
                     if(android.text.TextUtils.isDigitsOnly(ppgSample)) {
-                        publishProgress(Integer.parseInt(ppgSample));
+                        int value = Integer.parseInt(ppgSample);
+                        if(value > MIN_Y)
+                            publishProgress(value);
                     }
                     counter++;
                 }
@@ -154,7 +156,7 @@ public class HistoryDetail extends Activity {
         /*Displays PPG data on the graph*/
         protected void onProgressUpdate(Integer... value) {
             int yValue = value[0];
-            updateGraph(xValue, yValue);
+            updateGraph((xValue*2), yValue);
             xValue++;
         }
 

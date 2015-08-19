@@ -66,6 +66,8 @@ public class MainActivity extends Activity {
     private static final int SECONDS_IN_ONE_MINUTE = 60;
     private static final int SECONDS_IN_ONE_HOUR = 3600;
     private static final int ONE_SECOND = 1000;// 1000 milliseconds in one second
+    private static final int MAX_SAMPLES = 100;// Maximum number of samples for peak calculation
+                                               // max30100 sampling rate is 100 samples per second
 
     private boolean mShowGraph;
     private boolean mGraphViewActive;
@@ -123,7 +125,6 @@ public class MainActivity extends Activity {
         mShowGraph = false;
         mGraphViewActive = false;
 
-        mCollection = new ArrayList<String>();
         mCounter = 0;
         mRecTimerCounter = 1;
         min = sec =  hr = 0;
@@ -276,7 +277,7 @@ public class MainActivity extends Activity {
             if(mShowGraph && (mCollection.size() > (mCounter))) {
                 updateGraph(mCollection.get(mCounter));
             }
-            mHandler.postDelayed(mGraphTask, 5);
+            mHandler.post(mGraphTask);
         }
     };
 
