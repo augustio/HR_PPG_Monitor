@@ -59,8 +59,8 @@ public class MainActivity extends Activity {
     private static final int DISCONNECTED = 21;
     private static final int CONNECTING = 22;
     private static final int X_RANGE = 200;
-    private static final int MIN_Y = 30000;//Minimum PPG data value
-    private static final int MAX_Y = 65000;//Maximum PPG data value
+    private static final int MIN_Y = 40000;//Minimum PPG data value
+    private static final int MAX_Y = 50000;//Maximum PPG data value
     private static final int MAX_DATA_RECORDING_TIME = 120;//Two minutes(60 seconds)
     private static final int MAX_COLLECTION_SIZE = 10000;
     private static final int SECONDS_IN_ONE_MINUTE = 60;
@@ -76,7 +76,7 @@ public class MainActivity extends Activity {
     private TextView hrView, avHRView;
     private EditText editMessage;
     private LinearLayout.LayoutParams mParamEnable, mParamDisable;
-    private Button btnConnectDisconnect,btnShow,btnSend,btnStore, btnHistory;
+    private Button btnConnectDisconnect,btnReset,btnSend,btnStore, btnHistory;
     private ViewGroup mainLayout;
     private List<String> mRecord;
 
@@ -104,8 +104,8 @@ public class MainActivity extends Activity {
 
         btnConnectDisconnect=(Button) findViewById(R.id.btn_connect);
         btnConnectDisconnect.setBackgroundColor(getResources().getColor(R.color.green));
-        btnShow=(Button) findViewById(R.id.btn_show);
-        btnShow.setBackgroundColor(getResources().getColor(R.color.blue));
+        btnReset=(Button) findViewById(R.id.btn_reset);
+        btnReset.setBackgroundColor(getResources().getColor(R.color.blue));
         btnSend=(Button) findViewById(R.id.sendButton);
         btnStore = (Button)findViewById(R.id.btn_store);
         btnStore.setBackgroundColor(getResources().getColor(R.color.green));
@@ -190,16 +190,16 @@ public class MainActivity extends Activity {
             }
         });
 
-        // Handle Show Graph button
-        btnShow.setOnClickListener(new View.OnClickListener() {
+        // Handle reset Graph button
+        btnReset.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (mState == CONNECTED) {
                     if (mShowGraph) {
+                        mShowGraph = false;
                         stopGraph();
-                    }else{
+                    } else
                         startGraph();
-                    }
                 }
             }
         });
@@ -247,31 +247,23 @@ public class MainActivity extends Activity {
     }
 
     //Plot a new set of two PPG values on the graph and present on the GUI
-    private void updateGraph(String value) {
+    private void updateGraph(int value) {
+        value = (((value-MIN_Y)/5)+MIN_Y);
         double maxX = mCounter;
         double minX = (maxX < X_RANGE) ? 0 : (maxX - X_RANGE);
         mLineGraph.setXRange(minX, maxX);
-        mLineGraph.addValue(new Point(mCounter, Integer.parseInt(value)));
+        mLineGraph.addValue(new Point(mCounter, value));
         mCounter++;
         mGraphView.repaint();
-    }
-
-    private int processSample(String sample){
-        int value = Integer.parseInt(sample);
-        if(value < MIN_Y)
-            return MIN_Y;
-        return value;
     }
 
     private void startGraph(){
         setGraphView();
         mShowGraph = true;
-        btnShow.setText("Close");
     }
 
     private void stopGraph(){
         clearGraph();
-        btnShow.setText("View");
     }
 
     private void setHeartRateValue(int value) {
@@ -299,14 +291,12 @@ public class MainActivity extends Activity {
     }
     ;
     private void resetGUIComponents(){
-        btnShow.setBackgroundColor(getResources().getColor(R.color.blue));
-        btnShow.setText("View");
         btnStore.setText("Record");
         btnConnectDisconnect.setText("Connect");
         btnConnectDisconnect.setBackgroundColor(getResources().getColor(R.color.green));
         editMessage.setHint("");
         editMessage.setEnabled(false);
-        btnShow.setLayoutParams(mParamDisable);
+        btnReset.setLayoutParams(mParamDisable);
         btnStore.setLayoutParams(mParamDisable);
         btnHistory.setLayoutParams(mParamEnable);
         ((TextView) findViewById(R.id.deviceName)).setText(R.string.no_device);
@@ -341,7 +331,7 @@ public class MainActivity extends Activity {
                         btnConnectDisconnect.setBackgroundColor(getResources().getColor(R.color.red));
                         editMessage.setHint(R.string.text_hint);
                         editMessage.setEnabled(true);
-                        btnShow.setLayoutParams(mParamEnable);
+                        btnReset.setLayoutParams(mParamEnable);
                         btnStore.setLayoutParams(mParamEnable);
                         btnHistory.setLayoutParams(mParamDisable);
                         ((TextView) findViewById(R.id.deviceName)).setText(mDevice.getName()+ "- Connected");
@@ -371,8 +361,21 @@ public class MainActivity extends Activity {
                     if(android.text.TextUtils.isDigitsOnly(rxString)) {
                         if (mDataRecording)
                             mRecord.add(rxString);
-                        if (mShowGraph)
-                            updateGraph(rxString);
+                        /*if (mShowGraph) {
+                            int sample= Integer.parseInt(rxString);
+                            if(sample > MIN_Y)
+                                updateGraph(sample);
+                            else
+                                stopGraph();
+                        }*/
+                        int sample= Integer.parseInt(rxString);
+                        if(sample > MIN_Y) {
+                            if(!mShowGraph)
+                                startGraph();
+                            updateGraph(sample);
+                        }
+                        else
+                            stopGraph();
                     }
                 }
             }

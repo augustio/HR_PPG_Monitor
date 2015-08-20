@@ -31,12 +31,12 @@
             android:text="Connect" />
 
         <Button
-            android:id="@+id/btn_show"
+            android:id="@+id/btn_reset"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="0"
             android:padding="2dp"
-            android:text="View"/>
+            android:text="Reset"/>
 
         <Button
             android:id="@+id/btn_store"
