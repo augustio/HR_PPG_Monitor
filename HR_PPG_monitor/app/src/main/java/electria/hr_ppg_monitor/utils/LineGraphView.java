@@ -80,7 +80,7 @@ public class LineGraphView {
         renderer.setLabelsTextSize(20);
         renderer.setLegendTextSize(20);
         renderer.setInScroll(true);
-        renderer.setPanEnabled(true, true);
+        renderer.setPanEnabled(false, false);
         renderer.setZoomEnabled(false, false);
         //set title to x-axis and y-axis
         renderer.setXTitle("    Time (10mS)");
@@ -120,7 +120,8 @@ public class LineGraphView {
         mMultiRenderer.setXAxisMax(maxY);
     }
 
-    public void setPanLimits(double minX, double maxX, double minY, double maxY){
+    public void setPan(double minX, double maxX, double minY, double maxY){
+        mMultiRenderer.setPanEnabled(true, true);
         mMultiRenderer.setPanLimits(new double[]{minX, maxX, minY, maxY});
     }
 

@@ -60,14 +60,12 @@ public class MainActivity extends Activity {
     private static final int CONNECTING = 22;
     private static final int X_RANGE = 200;
     private static final int MIN_Y = 30000;//Minimum PPG data value
-    private static final int MAX_Y = 50000;//Maximum PPG data value
+    private static final int MAX_Y = 65000;//Maximum PPG data value
     private static final int MAX_DATA_RECORDING_TIME = 120;//Two minutes(60 seconds)
-    private static final int MAX_COLLECTION_SIZE = 12000;
+    private static final int MAX_COLLECTION_SIZE = 10000;
     private static final int SECONDS_IN_ONE_MINUTE = 60;
     private static final int SECONDS_IN_ONE_HOUR = 3600;
     private static final int ONE_SECOND = 1000;// 1000 milliseconds in one second
-    private static final int MAX_SAMPLES = 100;// Maximum number of samples for peak calculation
-                                               // max30100 sampling rate is 100 samples per second
 
     private boolean mShowGraph;
     private boolean mGraphViewActive;
@@ -80,7 +78,7 @@ public class MainActivity extends Activity {
     private LinearLayout.LayoutParams mParamEnable, mParamDisable;
     private Button btnConnectDisconnect,btnShow,btnSend,btnStore, btnHistory;
     private ViewGroup mainLayout;
-    private List<String> mCollection, mData;
+    private List<String> mRecord;
 
     private int mCounter;
     private int mRecTimerCounter, min, sec, hr;
@@ -118,8 +116,7 @@ public class MainActivity extends Activity {
         avHRView = (TextView) findViewById(R.id.av_heart_rate);
         mParamEnable = new LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.MATCH_PARENT, 2.0f);
         mParamDisable = new LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.MATCH_PARENT, 0.0f);
-        mCollection = new ArrayList<String>();
-        mData = new ArrayList<String>();
+        mRecord = new ArrayList<String>();
 
         mDataRecording = false;
         mShowGraph = false;
@@ -242,8 +239,8 @@ public class MainActivity extends Activity {
     //Prepare the initial GUI for graph
     private void setGraphView() {
         mLineGraph = LineGraphView.getLineGraphView();
-        mLineGraph.setYRange(MIN_Y, MAX_Y);
         mGraphView = mLineGraph.getView(this);
+        mLineGraph.setYRange(MIN_Y, MAX_Y);
         mainLayout = (ViewGroup) findViewById(R.id.graph_layout);
         mainLayout.addView(mGraphView);
         mGraphViewActive = true;
@@ -259,27 +256,23 @@ public class MainActivity extends Activity {
         mGraphView.repaint();
     }
 
+    private int processSample(String sample){
+        int value = Integer.parseInt(sample);
+        if(value < MIN_Y)
+            return MIN_Y;
+        return value;
+    }
+
     private void startGraph(){
         setGraphView();
         mShowGraph = true;
         btnShow.setText("Close");
-        mGraphTask.run();
     }
 
     private void stopGraph(){
         clearGraph();
         btnShow.setText("View");
     }
-
-    private Runnable mGraphTask = new Runnable() {
-        @Override
-        public void run() {
-            if(mShowGraph && (mCollection.size() > (mCounter))) {
-                updateGraph(mCollection.get(mCounter));
-            }
-            mHandler.post(mGraphTask);
-        }
-    };
 
     private void setHeartRateValue(int value) {
         if (value != 0) {
@@ -302,8 +295,6 @@ public class MainActivity extends Activity {
             setHeartRateValue(0);
             mAvHeartRate = 0;
             mHeartRateCount = 0;
-            mCollection.clear();
-            mHandler.removeCallbacks(mGraphTask);
         }
     }
     ;
@@ -377,15 +368,11 @@ public class MainActivity extends Activity {
                 String rxString = intent.getStringExtra(BleService.EXTRA_DATA);
                 if (rxString != null){
                     rxString = rxString.trim();
-                    if(android.text.TextUtils.isDigitsOnly(rxString) ) {
+                    if(android.text.TextUtils.isDigitsOnly(rxString)) {
                         if (mDataRecording)
-                            mData.add(rxString);
-                        if (mShowGraph) {
-                            if(mCollection.size() >= MAX_COLLECTION_SIZE)
-                                stopGraph();
-                            else
-                                mCollection.add(rxString);
-                        }
+                            mRecord.add(rxString);
+                        if (mShowGraph)
+                            updateGraph(rxString);
                     }
                 }
             }
@@ -425,7 +412,7 @@ public class MainActivity extends Activity {
     }
 
     private void saveToDisk(){
-        if(mData.isEmpty()){
+        if(mRecord.isEmpty()){
             showMessage("No data recorded");
             return;
         }
@@ -440,8 +427,8 @@ public class MainActivity extends Activity {
                     File file;
                     String fileName = ppgM.getSensor()+"_"+ppgM.getTimeStamp()+".txt";
                     file = new File(dir, fileName);
-                    ppgM.setData(Arrays.toString(mData.toArray(new String[mData.size()])));
-                    mData.clear();
+                    ppgM.setData(Arrays.toString(mRecord.toArray(new String[mRecord.size()])));
+                    mRecord.clear();
                     try {
                         FileWriter fw = new FileWriter(file, true);
                         fw.append(ppgM.toJson());
@@ -472,7 +459,7 @@ public class MainActivity extends Activity {
     private Runnable mRecordTimer = new Runnable() {
         @Override
         public void run() {
-            if(!mData.isEmpty()) {
+            if(!mRecord.isEmpty()) {
                 if (mRecTimerCounter < SECONDS_IN_ONE_MINUTE) {
                     sec = mRecTimerCounter;
                 } else if (mRecTimerCounter < SECONDS_IN_ONE_HOUR) {
