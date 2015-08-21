@@ -59,10 +59,10 @@ public class MainActivity extends Activity {
     private static final int DISCONNECTED = 21;
     private static final int CONNECTING = 22;
     private static final int X_RANGE = 200;
-    private static final int MIN_Y = 40000;//Minimum PPG data value
-    private static final int MAX_Y = 50000;//Maximum PPG data value
+    private static final int MIN_Y = 0;//Minimum PPG data value
+    private static final int MAX_Y = 25000;//Maximum PPG data value
     private static final int MAX_DATA_RECORDING_TIME = 120;//Two minutes(60 seconds)
-    private static final int MAX_COLLECTION_SIZE = 10000;
+    private static final int MIN_SAMPLE= 40000;
     private static final int SECONDS_IN_ONE_MINUTE = 60;
     private static final int SECONDS_IN_ONE_HOUR = 3600;
     private static final int ONE_SECOND = 1000;// 1000 milliseconds in one second
@@ -248,7 +248,7 @@ public class MainActivity extends Activity {
 
     //Plot a new set of two PPG values on the graph and present on the GUI
     private void updateGraph(int value) {
-        value = (((value-MIN_Y)/5)+MIN_Y);
+        value -= MIN_Y;
         double maxX = mCounter;
         double minX = (maxX < X_RANGE) ? 0 : (maxX - X_RANGE);
         mLineGraph.setXRange(minX, maxX);
@@ -369,13 +369,15 @@ public class MainActivity extends Activity {
                                 stopGraph();
                         }*/
                         int sample= Integer.parseInt(rxString);
-                        if(sample > MIN_Y) {
+                        if(sample > MIN_SAMPLE) {
                             if(!mShowGraph)
                                 startGraph();
                             updateGraph(sample);
                         }
-                        else
-                            stopGraph();
+                        else{
+                            if(mShowGraph)
+                                stopGraph();
+                        }
                     }
                 }
             }
