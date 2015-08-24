@@ -44,6 +44,7 @@ import android.graphics.Point;
 import org.achartengine.GraphicalView;
 
 import electria.hr_ppg_monitor.measurements.PPGMeasurement;
+import electria.hr_ppg_monitor.utils.GraphView;
 import electria.hr_ppg_monitor.utils.LineGraphView;
 import electria.hr_ppg_monitor.R;
 import electria.hr_ppg_monitor.services.BleService;
@@ -71,8 +72,8 @@ public class MainActivity extends Activity {
     private boolean mGraphViewActive;
     private boolean mDataRecording;
 
-    private GraphicalView mGraphView;
-    private LineGraphView mLineGraph;
+    //private GraphicalView mGraphView;
+    //private LineGraphView mLineGraph;
     private TextView hrView, avHRView;
     private EditText editMessage;
     private LinearLayout.LayoutParams mParamEnable, mParamDisable;
@@ -90,7 +91,7 @@ public class MainActivity extends Activity {
     private BluetoothDevice mDevice;
     private PPGMeasurement ppgM;
     private BluetoothAdapter mBtAdapter = null;
-
+    private GraphView mGraphView;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -238,23 +239,25 @@ public class MainActivity extends Activity {
 
     //Prepare the initial GUI for graph
     private void setGraphView() {
-        mLineGraph = LineGraphView.getLineGraphView();
+        /*mLineGraph = LineGraphView.getLineGraphView();
         mGraphView = mLineGraph.getView(this);
         mLineGraph.setYRange(MIN_Y, MAX_Y);
         mainLayout = (ViewGroup) findViewById(R.id.graph_layout);
-        mainLayout.addView(mGraphView);
-        mGraphViewActive = true;
+        mainLayout.addView(mGraphView);*/
+        mGraphView = (GraphView) findViewById(R.id.linechart);
     }
 
     //Plot a new set of two PPG values on the graph and present on the GUI
     private void updateGraph(int value) {
-        value -= MIN_Y;
+       /* value -= MIN_Y;
         double maxX = mCounter;
         double minX = (maxX < X_RANGE) ? 0 : (maxX - X_RANGE);
         mLineGraph.setXRange(minX, maxX);
         mLineGraph.addValue(new Point(mCounter, value));
         mCounter++;
         mGraphView.repaint();
+        */
+        mGraphView.addDataPoints((float)value);
     }
 
     private void startGraph(){
@@ -281,8 +284,9 @@ public class MainActivity extends Activity {
         if(mGraphViewActive) {
             mGraphViewActive = false;
             mShowGraph = false;
-            mLineGraph.clearGraph();
-            mCounter = 0;
+            //mLineGraph.clearGraph();
+            mGraphView.clearGraph();
+            //mCounter = 0;
             mainLayout.removeView(mGraphView);
             setHeartRateValue(0);
             mAvHeartRate = 0;
