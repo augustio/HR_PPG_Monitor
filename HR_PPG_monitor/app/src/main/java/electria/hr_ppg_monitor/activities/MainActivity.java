@@ -90,6 +90,8 @@ public class MainActivity extends Activity {
     private BluetoothDevice mDevice;
     private PPGMeasurement ppgM;
     private BluetoothAdapter mBtAdapter = null;
+    private int lastValue;
+    private long lastUpdate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -132,6 +134,8 @@ public class MainActivity extends Activity {
         mTimerString = "";
         mState = DISCONNECTED;
         mHandler = new Handler();
+        lastValue = 0;
+        lastUpdate = new Date().getTime();
 
         service_init();
 
@@ -248,13 +252,21 @@ public class MainActivity extends Activity {
 
     //Plot a new set of two PPG values on the graph and present on the GUI
     private void updateGraph(int value) {
-        value = (((value-MIN_Y)/5)+MIN_Y);
+        value = filter(value, 100);
         double maxX = mCounter;
         double minX = (maxX < X_RANGE) ? 0 : (maxX - X_RANGE);
         mLineGraph.setXRange(minX, maxX);
         mLineGraph.addValue(new Point(mCounter, value));
         mCounter++;
         mGraphView.repaint();
+    }
+
+    private int  filter( long newValue, int smoothing ){
+        long  now = new Date().getTime();
+        long elapsedTime = now - lastUpdate;
+        lastValue += elapsedTime * ( newValue - lastValue ) / smoothing;
+        lastUpdate = now;
+        return lastValue;
     }
 
     private void startGraph(){
@@ -375,7 +387,8 @@ public class MainActivity extends Activity {
                             updateGraph(sample);
                         }
                         else
-                            stopGraph();
+                            if(mShowGraph)
+                                stopGraph();
                     }
                 }
             }
