@@ -90,8 +90,6 @@ public class MainActivity extends Activity {
     private BluetoothDevice mDevice;
     private PPGMeasurement ppgM;
     private BluetoothAdapter mBtAdapter = null;
-    private int lastValue;
-    private long lastUpdate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -134,8 +132,6 @@ public class MainActivity extends Activity {
         mTimerString = "";
         mState = DISCONNECTED;
         mHandler = new Handler();
-        lastValue = 0;
-        lastUpdate = new Date().getTime();
 
         service_init();
 
@@ -252,21 +248,12 @@ public class MainActivity extends Activity {
 
     //Plot a new set of two PPG values on the graph and present on the GUI
     private void updateGraph(int value) {
-        value = filter(value, 100);
         double maxX = mCounter;
         double minX = (maxX < X_RANGE) ? 0 : (maxX - X_RANGE);
         mLineGraph.setXRange(minX, maxX);
         mLineGraph.addValue(new Point(mCounter, value));
         mCounter++;
         mGraphView.repaint();
-    }
-
-    private int  filter( long newValue, int smoothing ){
-        long  now = new Date().getTime();
-        long elapsedTime = now - lastUpdate;
-        lastValue += elapsedTime * ( newValue - lastValue ) / smoothing;
-        lastUpdate = now;
-        return lastValue;
     }
 
     private void startGraph(){
@@ -369,27 +356,21 @@ public class MainActivity extends Activity {
             if (action.equals(BleService.ACTION_RX_DATA_AVAILABLE)) {
                 String rxString = intent.getStringExtra(BleService.EXTRA_DATA);
                 if (rxString != null){
-                    rxString = rxString.trim();
-                    if(android.text.TextUtils.isDigitsOnly(rxString)) {
                         if (mDataRecording)
                             mRecord.add(rxString);
-                        /*if (mShowGraph) {
-                            int sample= Integer.parseInt(rxString);
-                            if(sample > MIN_Y)
-                                updateGraph(sample);
-                            else
-                                stopGraph();
-                        }*/
-                        int sample= Integer.parseInt(rxString);
-                        if(sample > MIN_Y) {
-                            if(!mShowGraph)
-                                startGraph();
-                            updateGraph(sample);
-                        }
-                        else
-                            if(mShowGraph)
-                                stopGraph();
+                }
+            }
+
+            if (action.equals(BleService.ACTION_FILTERED_DATA_AVAILABLE)) {
+                int rxInt = intent.getIntExtra(BleService.EXTRA_DATA, 0);
+                if (rxInt != 0){
+                    if(rxInt > MIN_Y) {
+                        if(!mShowGraph)
+                            startGraph();
+                        updateGraph(rxInt);
                     }
+                    else
+                        stopGraph();
                 }
             }
 
@@ -522,6 +503,7 @@ public class MainActivity extends Activity {
         intentFilter.addAction(BleService.DEVICE_DOES_NOT_SUPPORT_UART);
         intentFilter.addAction(BleService.ACTION_TX_CHAR_WRITE);
         intentFilter.addAction(BleService.ACTION_HEART_RATE_READ);
+        intentFilter.addAction(BleService.ACTION_FILTERED_DATA_AVAILABLE);
         return intentFilter;
     }
 

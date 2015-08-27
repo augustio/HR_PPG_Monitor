@@ -17,6 +17,7 @@ import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,11 +34,15 @@ public class BleService extends Service {
     private BluetoothGatt mBluetoothGatt;
     private BluetoothGattCharacteristic mRXCharacteristic;
     private BluetoothGattCharacteristic mTXCharacteristic;
+    private int lastValue;
+    private long lastUpdate;
+
     private int mConnectionState = STATE_DISCONNECTED;
 
     private static final int STATE_DISCONNECTED = 0;
     private static final int STATE_CONNECTING = 1;
     private static final int STATE_CONNECTED = 2;
+    private static final int MIN_Y = 40000;//Minimum PPG data value
 
     public final static String ACTION_GATT_CONNECTED =
             "electria.electriahrm.ACTION_GATT_CONNECTED";
@@ -46,7 +51,9 @@ public class BleService extends Service {
     public final static String ACTION_GATT_SERVICES_DISCOVERED =
             "electria.electriahrm.ACTION_GATT_SERVICES_DISCOVERED";
     public final static String ACTION_RX_DATA_AVAILABLE =
-            "electria.electriahrm.ACTION_DATA_AVAILABLE";
+            "electria.electriahrm.ACTION_RX_DATA_AVAILABLE";
+    public final static String ACTION_FILTERED_DATA_AVAILABLE =
+            "electria.electriahrm.ACTION_FILTERED_DATA_AVAILABLE";
     public final static String ACTION_TX_CHAR_WRITE =
             "electria.electriahrm.ACTION_TX_CHAR_WRITE";
     public final static String EXTRA_DATA =
@@ -70,6 +77,9 @@ public class BleService extends Service {
 
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 intentAction = ACTION_GATT_CONNECTED;
+                lastValue = 0;
+                lastUpdate = new Date().getTime();
+
                 mConnectionState = STATE_CONNECTED;
                 broadcastUpdate(intentAction);
                 Log.d(TAG, "Connected to GATT server.");
@@ -113,7 +123,11 @@ public class BleService extends Service {
         public void onCharacteristicChanged(BluetoothGatt gatt,
                                             BluetoothGattCharacteristic characteristic) {
             if(characteristic.getUuid().equals(RX_CHAR_UUID)) {
-                broadcastUpdate(ACTION_RX_DATA_AVAILABLE, characteristic.getStringValue(0));
+                int value = Integer.parseInt(characteristic.getStringValue(0).trim());
+                broadcastUpdate(ACTION_RX_DATA_AVAILABLE, Integer.toString(value));
+                if(value > MIN_Y ){
+                    broadcastUpdate(ACTION_FILTERED_DATA_AVAILABLE, filter(value, 100));
+                }
             }
         }
 
@@ -144,10 +158,25 @@ public class BleService extends Service {
     }
 
     private void broadcastUpdate(final String action,
-                                 final String stringValue) {
+                                 final int value) {
         final Intent intent = new Intent(action);
-        intent.putExtra(EXTRA_DATA, stringValue);
+        intent.putExtra(EXTRA_DATA, value);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+    }
+
+    private void broadcastUpdate(final String action,
+                                 final String str) {
+        final Intent intent = new Intent(action);
+        intent.putExtra(EXTRA_DATA, str);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+    }
+
+    private int  filter( long newValue, int smoothing ){
+        long  now = new Date().getTime();
+        long elapsedTime = now - lastUpdate;
+        lastValue += elapsedTime * ( newValue - lastValue ) / smoothing;
+        lastUpdate = now;
+        return lastValue;
     }
 
     public class LocalBinder extends Binder {
