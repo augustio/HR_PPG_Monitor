@@ -26,7 +26,7 @@ import android.graphics.Point;
  */
 public class LineGraphView {
     //TimeSeries will hold the data in x,y format for single chart
-    private TimeSeries mSeries = new TimeSeries("PPG");
+    private TimeSeries mSeries = new TimeSeries("");
     //XYSeriesRenderer is used to set the properties like chart color, style of each point, etc. of single chart
     private XYSeriesRenderer mRenderer = new XYSeriesRenderer();
     //XYMultipleSeriesDataset will contain all the TimeSeries
@@ -59,32 +59,19 @@ public class LineGraphView {
         FillOutsideLine fill = new FillOutsideLine(FillOutsideLine.Type.BOUNDS_ALL);
         fill.setColor(Color.BLUE);
         mRenderer.addFillOutsideLine(fill);
-        //set line chart style to square points
-        //mRenderer.setPointStyle(PointStyle.SQUARE);
         mRenderer.setFillPoints(true);
 
         final XYMultipleSeriesRenderer renderer = mMultiRenderer;
         //set whole graph background color to transparent color
-        renderer.setBackgroundColor(Color.TRANSPARENT);
-        renderer.setMargins(new int[] { 50, 65, 40, 5 }); // top, left, bottom, right
-        renderer.setMarginsColor(Color.argb(0x00, 0x01, 0x01, 0x01));
-        renderer.setAxesColor(Color.BLACK);
-        renderer.setAxisTitleTextSize(24);
-        renderer.setShowGrid(true);
-        renderer.setGridColor(Color.LTGRAY);
-        renderer.setLabelsColor(Color.BLACK);
-        renderer.setYLabelsColor(0, Color.DKGRAY);
-        renderer.setYLabelsAlign(Align.RIGHT);
-        renderer.setYLabelsPadding(4.0f);
-        renderer.setXLabelsColor(Color.DKGRAY);
-        renderer.setLabelsTextSize(20);
-        renderer.setLegendTextSize(20);
-        renderer.setInScroll(true);
+        renderer.setBackgroundColor(Color.LTGRAY);
+        renderer.setMargins(new int[]{50, 65, 40, 5}); // top, left, bottom, right
+        renderer.setMarginsColor(Color.WHITE);
+        renderer.setAxesColor(Color.WHITE);
+        renderer.setShowGrid(false);
+        renderer.setXLabels(0);
+        renderer.setYLabels(0);
         renderer.setPanEnabled(false, false);
         renderer.setZoomEnabled(false, false);
-        //set title to x-axis and y-axis
-        renderer.setXTitle("    Time (10mS)");
-        renderer.setYTitle("    Voltage (mV)");
         renderer.addSeriesRenderer(mRenderer);
     }
 
