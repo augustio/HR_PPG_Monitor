@@ -364,14 +364,12 @@ public class MainActivity extends Activity {
             if (action.equals(BleService.ACTION_FILTERED_DATA_AVAILABLE)) {
                 int rxInt = intent.getIntExtra(BleService.EXTRA_DATA, 0);
                 if (rxInt != 0){
-                    if(rxInt > MIN_Y) {
-                        if(!mShowGraph)
-                            startGraph();
-                        updateGraph(rxInt);
-                    }
-                    else
-                        stopGraph();
+                    if(!mShowGraph)
+                        startGraph();
+                    updateGraph(rxInt);
                 }
+                else if(mShowGraph)
+                    stopGraph();
             }
 
             if (action.equals(BleService.DEVICE_DOES_NOT_SUPPORT_UART)){

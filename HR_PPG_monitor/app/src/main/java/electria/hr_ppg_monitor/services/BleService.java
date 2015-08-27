@@ -125,9 +125,10 @@ public class BleService extends Service {
             if(characteristic.getUuid().equals(RX_CHAR_UUID)) {
                 int value = Integer.parseInt(characteristic.getStringValue(0).trim());
                 broadcastUpdate(ACTION_RX_DATA_AVAILABLE, Integer.toString(value));
-                if(value > MIN_Y ){
+                if(value > MIN_Y )
                     broadcastUpdate(ACTION_FILTERED_DATA_AVAILABLE, filter(value, 100));
-                }
+                else
+                    broadcastUpdate(ACTION_FILTERED_DATA_AVAILABLE, 0);
             }
         }
 
