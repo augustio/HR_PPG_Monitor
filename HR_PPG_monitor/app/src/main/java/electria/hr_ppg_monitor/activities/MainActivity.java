@@ -73,7 +73,7 @@ public class MainActivity extends Activity {
 
     private GraphicalView mGraphView;
     private LineGraphView mLineGraph;
-    private TextView hrView, avHRView;
+    private TextView hrView;
     private EditText editMessage;
     private LinearLayout.LayoutParams mParamEnable, mParamDisable;
     private Button btnConnectDisconnect,btnReset,btnSend,btnStore, btnHistory;
@@ -84,7 +84,6 @@ public class MainActivity extends Activity {
     private int mRecTimerCounter, min, sec, hr;
     private BleService mService;
     private int mState;
-    private double mAvHeartRate, mHeartRateCount;
     private String mTimerString;
     private Handler mHandler;
     private BluetoothDevice mDevice;
@@ -113,7 +112,6 @@ public class MainActivity extends Activity {
         btnHistory.setBackgroundColor(getResources().getColor(R.color.blue));
         editMessage=(EditText) findViewById(R.id.sendText);
         hrView = (TextView) findViewById(R.id.heart_rate);
-        avHRView = (TextView) findViewById(R.id.av_heart_rate);
         mParamEnable = new LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.MATCH_PARENT, 2.0f);
         mParamDisable = new LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.MATCH_PARENT, 0.0f);
         mRecord = new ArrayList<String>();
@@ -125,8 +123,6 @@ public class MainActivity extends Activity {
         mCounter = 0;
         mRecTimerCounter = 1;
         min = sec =  hr = 0;
-        mAvHeartRate = 0;
-        mHeartRateCount = 0;
         mService = null;
         mDevice = null;
         mTimerString = "";
@@ -267,12 +263,9 @@ public class MainActivity extends Activity {
 
     private void setHeartRateValue(int value) {
         if (value != 0) {
-            hrView.setText("HR  " + value + "BPM");
-            mAvHeartRate = ((mAvHeartRate*mHeartRateCount)+value)/(++mHeartRateCount);
-            avHRView.setText("AvHR " +Math.round(mAvHeartRate)+ "BPM");
+            hrView.setText(value + "BPM");
         } else {
             hrView.setText(" ");
-            avHRView.setText(" ");
         }
     }
 
@@ -284,8 +277,6 @@ public class MainActivity extends Activity {
             mCounter = 0;
             mainLayout.removeView(mGraphView);
             setHeartRateValue(0);
-            mAvHeartRate = 0;
-            mHeartRateCount = 0;
         }
     }
     ;
@@ -367,6 +358,7 @@ public class MainActivity extends Activity {
                     if(!mShowGraph)
                         startGraph();
                     updateGraph(rxInt);
+                    setHeartRateValue(60);
                 }
                 else if(mShowGraph)
                     stopGraph();

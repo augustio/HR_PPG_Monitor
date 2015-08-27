@@ -63,7 +63,7 @@ public class LineGraphView {
 
         final XYMultipleSeriesRenderer renderer = mMultiRenderer;
         //set whole graph background color to transparent color
-        renderer.setBackgroundColor(Color.LTGRAY);
+        renderer.setBackgroundColor(Color.GRAY);
         renderer.setMargins(new int[]{50, 65, 40, 5}); // top, left, bottom, right
         renderer.setMarginsColor(Color.WHITE);
         renderer.setAxesColor(Color.WHITE);
