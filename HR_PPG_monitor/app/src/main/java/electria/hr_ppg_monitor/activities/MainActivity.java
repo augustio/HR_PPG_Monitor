@@ -114,7 +114,7 @@ public class MainActivity extends Activity {
         hrView = (TextView) findViewById(R.id.heart_rate);
         mParamEnable = new LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.MATCH_PARENT, 2.0f);
         mParamDisable = new LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.MATCH_PARENT, 0.0f);
-        mRecord = new ArrayList<String>();
+        mRecord = new ArrayList<>();
 
         mDataRecording = false;
         mShowGraph = false;

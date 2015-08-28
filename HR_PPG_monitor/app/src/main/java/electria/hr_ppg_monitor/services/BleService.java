@@ -17,6 +17,7 @@ import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -35,7 +36,7 @@ public class BleService extends Service {
     private BluetoothGattCharacteristic mRXCharacteristic;
     private BluetoothGattCharacteristic mTXCharacteristic;
     private int lastValue;
-    private long lastUpdate;
+    private ArrayList<Integer> samples;
 
     private int mConnectionState = STATE_DISCONNECTED;
 
@@ -43,6 +44,7 @@ public class BleService extends Service {
     private static final int STATE_CONNECTING = 1;
     private static final int STATE_CONNECTED = 2;
     private static final int MIN_Y = 40000;//Minimum PPG data value
+    private static final int SMOOTHING = 10;//Variable to determine the smoothness of the signal
 
     public final static String ACTION_GATT_CONNECTED =
             "electria.electriahrm.ACTION_GATT_CONNECTED";
@@ -78,7 +80,7 @@ public class BleService extends Service {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 intentAction = ACTION_GATT_CONNECTED;
                 lastValue = 0;
-                lastUpdate = new Date().getTime();
+                samples = new ArrayList<>();
 
                 mConnectionState = STATE_CONNECTED;
                 broadcastUpdate(intentAction);
@@ -125,8 +127,10 @@ public class BleService extends Service {
             if(characteristic.getUuid().equals(RX_CHAR_UUID)) {
                 int value = Integer.parseInt(characteristic.getStringValue(0).trim());
                 broadcastUpdate(ACTION_RX_DATA_AVAILABLE, Integer.toString(value));
-                if(value > MIN_Y )
-                    broadcastUpdate(ACTION_FILTERED_DATA_AVAILABLE, filter(value, 100));
+                if(value > MIN_Y ){
+                    broadcastUpdate(ACTION_FILTERED_DATA_AVAILABLE, filter(value, SMOOTHING));
+                    samples.add(value);
+                }
                 else
                     broadcastUpdate(ACTION_FILTERED_DATA_AVAILABLE, 0);
             }
@@ -173,10 +177,7 @@ public class BleService extends Service {
     }
 
     private int  filter( long newValue, int smoothing ){
-        long  now = new Date().getTime();
-        long elapsedTime = now - lastUpdate;
-        lastValue += elapsedTime * ( newValue - lastValue ) / smoothing;
-        lastUpdate = now;
+        lastValue += ( newValue - lastValue ) / smoothing;
         return lastValue;
     }
 
