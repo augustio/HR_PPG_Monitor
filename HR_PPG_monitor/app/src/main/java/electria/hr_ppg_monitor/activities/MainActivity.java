@@ -62,7 +62,6 @@ public class MainActivity extends Activity {
     private static final int MIN_Y = 40000;//Minimum PPG data value
     private static final int MAX_Y = 50000;//Maximum PPG data value
     private static final int MAX_DATA_RECORDING_TIME = 120;//Two minutes(60 seconds)
-    private static final int MAX_COLLECTION_SIZE = 10000;
     private static final int SECONDS_IN_ONE_MINUTE = 60;
     private static final int SECONDS_IN_ONE_HOUR = 3600;
     private static final int ONE_SECOND = 1000;// 1000 milliseconds in one second
@@ -354,11 +353,10 @@ public class MainActivity extends Activity {
 
             if (action.equals(BleService.ACTION_FILTERED_DATA_AVAILABLE)) {
                 int rxInt = intent.getIntExtra(BleService.EXTRA_DATA, 0);
-                if (rxInt != 0){
+                if (rxInt > 0){
                     if(!mShowGraph)
                         startGraph();
                     updateGraph(rxInt);
-                    setHeartRateValue(60);
                 }
                 else if(mShowGraph)
                     stopGraph();

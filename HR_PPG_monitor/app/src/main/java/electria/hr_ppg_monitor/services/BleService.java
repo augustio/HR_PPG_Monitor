@@ -17,8 +17,6 @@ import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,16 +33,14 @@ public class BleService extends Service {
     private BluetoothGatt mBluetoothGatt;
     private BluetoothGattCharacteristic mRXCharacteristic;
     private BluetoothGattCharacteristic mTXCharacteristic;
-    private int lastValue;
-    private ArrayList<Integer> samples;
-
+    private int mLastValue, mFilterRound;
     private int mConnectionState = STATE_DISCONNECTED;
 
     private static final int STATE_DISCONNECTED = 0;
     private static final int STATE_CONNECTING = 1;
     private static final int STATE_CONNECTED = 2;
     private static final int MIN_Y = 40000;//Minimum PPG data value
-    private static final int SMOOTHING = 10;//Variable to determine the smoothness of the signal
+    private static final int  SMOOTHING = 10;//Variable to determine the smoothness of the signal
 
     public final static String ACTION_GATT_CONNECTED =
             "electria.electriahrm.ACTION_GATT_CONNECTED";
@@ -79,10 +75,9 @@ public class BleService extends Service {
 
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 intentAction = ACTION_GATT_CONNECTED;
-                lastValue = 0;
-                samples = new ArrayList<>();
-
                 mConnectionState = STATE_CONNECTED;
+                mLastValue = MIN_Y;
+                mFilterRound = 0;
                 broadcastUpdate(intentAction);
                 Log.d(TAG, "Connected to GATT server.");
                 // Attempts to discover services after successful connection.
@@ -127,12 +122,14 @@ public class BleService extends Service {
             if(characteristic.getUuid().equals(RX_CHAR_UUID)) {
                 int value = Integer.parseInt(characteristic.getStringValue(0).trim());
                 broadcastUpdate(ACTION_RX_DATA_AVAILABLE, Integer.toString(value));
-                if(value > MIN_Y ){
-                    broadcastUpdate(ACTION_FILTERED_DATA_AVAILABLE, filter(value, SMOOTHING));
-                    samples.add(value);
+                if(value > MIN_Y  && mFilterRound == 10){
+                    value = envelope(value);
+                    broadcastUpdate(ACTION_FILTERED_DATA_AVAILABLE, value);
                 }
                 else
                     broadcastUpdate(ACTION_FILTERED_DATA_AVAILABLE, 0);
+                if(mFilterRound < 10)
+                    mFilterRound++;
             }
         }
 
@@ -176,9 +173,15 @@ public class BleService extends Service {
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
-    private int  filter( long newValue, int smoothing ){
-        lastValue += ( newValue - lastValue ) / smoothing;
-        return lastValue;
+    private int  filter( int newValue, int smoothing ){
+        return mLastValue += ((newValue - mLastValue) / smoothing);
+    }
+    private int envelope(int sample){
+        int env;
+        int squaredSample= sample*sample;
+        int filtered = filter(Math.abs(squaredSample), SMOOTHING);
+        env = Math.round((float)Math.sqrt(filtered));
+        return env;
     }
 
     public class LocalBinder extends Binder {
