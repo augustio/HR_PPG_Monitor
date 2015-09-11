@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import electria.hr_ppg_monitor.filter.IirFilter;
-
 /**
  * Service for managing connection and data communication with a GATT server hosted on a
  * given Bluetooth LE device.
