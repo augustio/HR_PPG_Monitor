@@ -129,8 +129,10 @@ public class BleService extends Service {
                         broadcastUpdate(ACTION_RX_DATA_AVAILABLE, Integer.toString(value));
                     }
                 }
-                else
+                else {
                     broadcastUpdate(ACTION_FILTERED_DATA_AVAILABLE, 0);
+                    mSamples.clear();
+                }
             }
         }
 
@@ -174,23 +176,17 @@ public class BleService extends Service {
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
+    //31 point moving average filter
     private int iIRFilter(int sample){
         int filtered = 0;
         mSamples.add(sample);
-        if(mSamples.size() < 30)
+        if(mSamples.size() < 31)
             return filtered;
-        for(int i = 0; i < 30; i++)
+        for(int i = 0; i < 31; i++)
             filtered += mSamples.get(i);
         mSamples.remove(0);
-        filtered = filtered/30;
+        filtered = filtered/31;
         return filtered;
-    }
-    private int envelope(int sample){
-        int env;
-        int squaredSample= sample*sample;
-        int filtered = iIRFilter(squaredSample);
-        env = Math.round((float)Math.sqrt(filtered));
-        return env;
     }
 
     public class LocalBinder extends Binder {
