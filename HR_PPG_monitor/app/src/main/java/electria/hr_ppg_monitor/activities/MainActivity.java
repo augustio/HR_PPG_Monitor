@@ -44,6 +44,7 @@ import android.graphics.Point;
 import org.achartengine.GraphicalView;
 
 import electria.hr_ppg_monitor.measurements.PPGMeasurement;
+import electria.hr_ppg_monitor.utils.GraphView;
 import electria.hr_ppg_monitor.utils.LineGraphView;
 import electria.hr_ppg_monitor.R;
 import electria.hr_ppg_monitor.services.BleService;
@@ -58,8 +59,16 @@ public class MainActivity extends Activity {
     private static final int CONNECTED = 20;
     private static final int DISCONNECTED = 21;
     private static final int CONNECTING = 22;
+<<<<<<< HEAD
     private static final int X_RANGE = 400;
     private static final int MAX_DATA_RECORDING_TIME = 120;//Two minutes(60 seconds)
+=======
+    private static final int X_RANGE = 200;
+    private static final int MIN_Y = 0;//Minimum PPG data value
+    private static final int MAX_Y = 25000;//Maximum PPG data value
+    private static final int MAX_DATA_RECORDING_TIME = 120;//Two minutes(60 seconds)
+    private static final int MIN_SAMPLE= 40000;
+>>>>>>> d5e9c00a882d60a933fa81d44b58f67427fa0a63
     private static final int SECONDS_IN_ONE_MINUTE = 60;
     private static final int SECONDS_IN_ONE_HOUR = 3600;
     private static final int ONE_SECOND = 1000;// 1000 milliseconds in one second
@@ -68,9 +77,15 @@ public class MainActivity extends Activity {
     private boolean mGraphViewActive;
     private boolean mDataRecording;
 
+<<<<<<< HEAD
     private GraphicalView mGraphView;
     private LineGraphView mLineGraph;
     private TextView hrView;
+=======
+    //private GraphicalView mGraphView;
+    //private LineGraphView mLineGraph;
+    private TextView hrView, avHRView;
+>>>>>>> d5e9c00a882d60a933fa81d44b58f67427fa0a63
     private EditText editMessage;
     private LinearLayout.LayoutParams mParamEnable, mParamDisable;
     private Button btnConnectDisconnect,btnReset,btnSend,btnStore, btnHistory;
@@ -86,7 +101,7 @@ public class MainActivity extends Activity {
     private BluetoothDevice mDevice;
     private PPGMeasurement ppgM;
     private BluetoothAdapter mBtAdapter = null;
-
+    private GraphView mGraphView;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -231,16 +246,21 @@ public class MainActivity extends Activity {
 
     //Prepare the initial GUI for graph
     private void setGraphView() {
+<<<<<<< HEAD
         mLineGraph = new LineGraphView();
+=======
+        /*mLineGraph = LineGraphView.getLineGraphView();
+>>>>>>> d5e9c00a882d60a933fa81d44b58f67427fa0a63
         mGraphView = mLineGraph.getView(this);
         //mLineGraph.setYRange(MIN_Y, MAX_Y);
         mainLayout = (ViewGroup) findViewById(R.id.graph_layout);
-        mainLayout.addView(mGraphView);
-        mGraphViewActive = true;
+        mainLayout.addView(mGraphView);*/
+        mGraphView = (GraphView) findViewById(R.id.linechart);
     }
 
     //Plot a new set of two PPG values on the graph and present on the GUI
     private void updateGraph(int value) {
+<<<<<<< HEAD
         if(mCounter > X_RANGE){
             mCounter = 0;
         }
@@ -248,8 +268,17 @@ public class MainActivity extends Activity {
             mLineGraph.removeValue(mCounter);
         }
         mLineGraph.addValue(mCounter, mCounter, value);
+=======
+       /* value -= MIN_Y;
+        double maxX = mCounter;
+        double minX = (maxX < X_RANGE) ? 0 : (maxX - X_RANGE);
+        mLineGraph.setXRange(minX, maxX);
+        mLineGraph.addValue(new Point(mCounter, value));
+>>>>>>> d5e9c00a882d60a933fa81d44b58f67427fa0a63
         mCounter++;
         mGraphView.repaint();
+        */
+        mGraphView.addDataPoints((float)value);
     }
 
     private void startGraph(){
@@ -273,8 +302,9 @@ public class MainActivity extends Activity {
         if(mGraphViewActive) {
             mGraphViewActive = false;
             mShowGraph = false;
-            mLineGraph.clearGraph();
-            mCounter = 0;
+            //mLineGraph.clearGraph();
+            mGraphView.clearGraph();
+            //mCounter = 0;
             mainLayout.removeView(mGraphView);
             setHeartRateValue(0);
         }
@@ -349,6 +379,27 @@ public class MainActivity extends Activity {
                 if (rxString != null){
                         if (mDataRecording)
                             mRecord.add(rxString);
+<<<<<<< HEAD
+=======
+                        /*if (mShowGraph) {
+                            int sample= Integer.parseInt(rxString);
+                            if(sample > MIN_Y)
+                                updateGraph(sample);
+                            else
+                                stopGraph();
+                        }*/
+                        int sample= Integer.parseInt(rxString);
+                        if(sample > MIN_SAMPLE) {
+                            if(!mShowGraph)
+                                startGraph();
+                            updateGraph(sample);
+                        }
+                        else{
+                            if(mShowGraph)
+                                stopGraph();
+                        }
+                    }
+>>>>>>> d5e9c00a882d60a933fa81d44b58f67427fa0a63
                 }
             }
 
