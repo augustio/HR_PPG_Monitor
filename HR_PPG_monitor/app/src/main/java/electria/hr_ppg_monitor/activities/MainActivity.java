@@ -58,9 +58,7 @@ public class MainActivity extends Activity {
     private static final int CONNECTED = 20;
     private static final int DISCONNECTED = 21;
     private static final int CONNECTING = 22;
-    private static final int X_RANGE = 200;
-    private static final int MIN_Y = 40000;//Minimum PPG data value
-    private static final int MAX_Y = 50000;//Maximum PPG data value
+    private static final int X_RANGE = 400;
     private static final int MAX_DATA_RECORDING_TIME = 120;//Two minutes(60 seconds)
     private static final int SECONDS_IN_ONE_MINUTE = 60;
     private static final int SECONDS_IN_ONE_HOUR = 3600;
@@ -233,9 +231,9 @@ public class MainActivity extends Activity {
 
     //Prepare the initial GUI for graph
     private void setGraphView() {
-        mLineGraph = LineGraphView.getLineGraphView();
+        mLineGraph = new LineGraphView();
         mGraphView = mLineGraph.getView(this);
-        mLineGraph.setYRange(MIN_Y, MAX_Y);
+        //mLineGraph.setYRange(MIN_Y, MAX_Y);
         mainLayout = (ViewGroup) findViewById(R.id.graph_layout);
         mainLayout.addView(mGraphView);
         mGraphViewActive = true;
@@ -243,10 +241,13 @@ public class MainActivity extends Activity {
 
     //Plot a new set of two PPG values on the graph and present on the GUI
     private void updateGraph(int value) {
-        double maxX = mCounter;
-        double minX = (maxX < X_RANGE) ? 0 : (maxX - X_RANGE);
-        mLineGraph.setXRange(minX, maxX);
-        mLineGraph.addValue(new Point(mCounter, value));
+        if(mCounter > X_RANGE){
+            mCounter = 0;
+        }
+        if(mLineGraph.getItemCount() > mCounter){
+            mLineGraph.removeValue(mCounter);
+        }
+        mLineGraph.addValue(mCounter, mCounter, value);
         mCounter++;
         mGraphView.repaint();
     }
@@ -323,7 +324,7 @@ public class MainActivity extends Activity {
                         btnReset.setLayoutParams(mParamEnable);
                         btnStore.setLayoutParams(mParamEnable);
                         btnHistory.setLayoutParams(mParamDisable);
-                        ((TextView) findViewById(R.id.deviceName)).setText(mDevice.getName()+ "- Connected");
+                        ((TextView) findViewById(R.id.deviceName)).setText(mDevice.getName() + "- Connected");
                         mState = CONNECTED;
                     }
                 });

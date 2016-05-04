@@ -130,6 +130,7 @@ public class BleService extends Service {
                 else {
                     broadcastUpdate(ACTION_FILTERED_DATA_AVAILABLE, 0);
                     mSamples.clear();
+                    broadcastUpdate(ACTION_HEART_RATE_READ, 0);
                 }
             }
         }
@@ -174,16 +175,16 @@ public class BleService extends Service {
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
-    //31 point moving average filter
+    //21 point moving average filter
     private int iIRFilter(int sample){
         int filtered = 0;
         mSamples.add(sample);
-        if(mSamples.size() < 31)
+        if(mSamples.size() < 21)
             return filtered;
-        for(int i = 0; i < 31; i++)
+        for(int i = 0; i < 21; i++)
             filtered += mSamples.get(i);
         mSamples.remove(0);
-        filtered = filtered/31;
+        filtered = filtered/21;
         return filtered;
     }
 
@@ -346,5 +347,4 @@ public class BleService extends Service {
             broadcastUpdate(DEVICE_DOES_NOT_SUPPORT_UART);
         }
     }
-
 }

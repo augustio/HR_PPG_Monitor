@@ -45,9 +45,6 @@ public class HistoryDetail extends Activity {
     private static final String SERVER_URL = "http://52.18.112.240:3000/records";
     private static final int X_RANGE = 500;
     private static final int MIN_Y = 30000;//Minimum PPG data value
-    private static final int MAX_Y = 50000;//Maximum PPG data value
-    private static final int MIN_X = 0;
-    private static final int MAX_X = 40000;
     private GraphicalView mGraphView;
     private LineGraphView mLineGraph;
     private ViewGroup mHistLayout;
@@ -56,7 +53,6 @@ public class HistoryDetail extends Activity {
     private String mFPath;
     private File mFile;
     private PPGMeasurement ppgM;
-    private int minY, maxY;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,8 +65,6 @@ public class HistoryDetail extends Activity {
         btnSendCloud.setEnabled(false);
         mFile = null;
         ppgM = new PPGMeasurement();
-        minY = MAX_Y;
-        maxY = MIN_Y;
         Bundle extras = getIntent().getExtras();
         if (extras == null) {
             finish();
@@ -116,8 +110,6 @@ public class HistoryDetail extends Activity {
     //Prepare the initial GUI for graph
     private void setGraphView() {
         mLineGraph = new LineGraphView();
-        mLineGraph.setYRange(MIN_Y, MAX_Y);
-        mLineGraph.setPan(MIN_X, MAX_X, MIN_Y, MAX_Y);
         mGraphView = mLineGraph.getView(this);
         mHistLayout = (ViewGroup) findViewById(R.id.history_detail);
         mHistLayout.addView(mGraphView);
@@ -156,7 +148,10 @@ public class HistoryDetail extends Activity {
         /*Displays PPG data on the graph*/
         protected void onProgressUpdate(Integer... value) {
             int yValue = value[0];
-            updateGraph((xValue*2), yValue);
+            if(xValue > X_RANGE){
+                xValue = 0;
+            }
+            updateGraph(xValue, yValue);
             xValue++;
         }
 
@@ -188,13 +183,10 @@ public class HistoryDetail extends Activity {
 
     //Add a point to the graph
     private void updateGraph(int x, int y){
-        double maxX = x;
-        double minX = (maxX < X_RANGE) ? 0 : (maxX - X_RANGE);
-        minY = (y < minY)? y: minY;
-        maxY = (y > maxY)? y: maxY;
-        mLineGraph.setPan(MIN_X, MAX_X,minY, maxY);
-        mLineGraph.setXRange(minX, maxX);
-        mLineGraph.addValue(new Point(x, y));
+        if(mLineGraph.getItemCount() > x){
+            mLineGraph.removeValue(x);
+        }
+        mLineGraph.addValue(x, x*2, y);
         mGraphView.repaint();
     }
 
