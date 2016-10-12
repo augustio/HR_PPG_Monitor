@@ -3,7 +3,6 @@ package electria.hr_ppg_monitor.activities;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,14 +31,11 @@ import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.view.ViewGroup;
-import android.graphics.Point;
 
 import org.achartengine.GraphicalView;
 
@@ -71,9 +67,8 @@ public class MainActivity extends Activity {
     private GraphicalView mGraphView;
     private LineGraphView mLineGraph;
     private TextView hrView;
-    private EditText editMessage;
     private LinearLayout.LayoutParams mParamEnable, mParamDisable;
-    private Button btnConnectDisconnect,btnReset,btnSend,btnStore, btnHistory;
+    private Button btnConnectDisconnect, btnHistory;
     private ViewGroup mainLayout;
     private List<String> mRecord;
 
@@ -99,15 +94,7 @@ public class MainActivity extends Activity {
         }
 
         btnConnectDisconnect=(Button) findViewById(R.id.btn_connect);
-        btnConnectDisconnect.setBackgroundColor(getResources().getColor(R.color.green));
-        btnReset=(Button) findViewById(R.id.btn_reset);
-        btnReset.setBackgroundColor(getResources().getColor(R.color.blue));
-        btnSend=(Button) findViewById(R.id.sendButton);
-        btnStore = (Button)findViewById(R.id.btn_store);
-        btnStore.setBackgroundColor(getResources().getColor(R.color.green));
         btnHistory = (Button)findViewById(R.id.btn_history);
-        btnHistory.setBackgroundColor(getResources().getColor(R.color.blue));
-        editMessage=(EditText) findViewById(R.id.sendText);
         hrView = (TextView) findViewById(R.id.heart_rate);
         mParamEnable = new LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.MATCH_PARENT, 2.0f);
         mParamDisable = new LinearLayout.LayoutParams(0,LinearLayout.LayoutParams.MATCH_PARENT, 0.0f);
@@ -152,69 +139,17 @@ public class MainActivity extends Activity {
             }
         });
 
-        editMessage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                btnSend.setEnabled(true);
-                editMessage.setHint("");
+        /*if (mState == CONNECTED) {
+            if(mDataRecording){
+                stopRecordingData();
             }
-        });
-
-        // Handle Send button
-        btnSend.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String message = editMessage.getText().toString();
-                byte[] value;
-                try {
-                    //send data to service
-                    value = message.getBytes("UTF-8");
-                    if(value != null)
-                        mService.writeTXCharacteristic(value);
-                } catch (UnsupportedEncodingException e) {
-                    Log.d(TAG, e.getMessage());
-                }
-                editMessage.setText("");
-                btnSend.setEnabled(false);
-                editMessage.setHint(R.string.text_hint);
-                //Close keyboard
-                InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.hideSoftInputFromWindow(editMessage.getWindowToken(), 0);
+            else{
+                ppgM = new PPGMeasurement(mDevice.getName(),
+                        new SimpleDateFormat("yyMMddHHmmss", Locale.US).format(new Date()));
+                mDataRecording = true;
+                mRecordTimer.run();
             }
-        });
-
-        // Handle reset Graph button
-        btnReset.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (mState == CONNECTED) {
-                    if (mShowGraph) {
-                        mShowGraph = false;
-                        stopGraph();
-                    } else
-                        startGraph();
-                }
-            }
-        });
-
-        // Handle Record button
-        btnStore.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (mState == CONNECTED) {
-                    if(mDataRecording){
-                        stopRecordingData();
-                    }
-                    else{
-                        ppgM = new PPGMeasurement(mDevice.getName(),
-                                new SimpleDateFormat("yyMMddHHmmss", Locale.US).format(new Date()));
-                        mDataRecording = true;
-                        btnStore.setText("Stop");
-                        mRecordTimer.run();
-                    }
-                }
-            }
-        });
+        }*/
 
         // Handle History button
         btnHistory.setOnClickListener(new View.OnClickListener() {
@@ -281,14 +216,8 @@ public class MainActivity extends Activity {
     }
     ;
     private void resetGUIComponents(){
-        btnStore.setText("Record");
         btnConnectDisconnect.setText("Connect");
-        btnConnectDisconnect.setBackgroundColor(getResources().getColor(R.color.green));
-        editMessage.setHint("");
-        editMessage.setEnabled(false);
-        btnReset.setLayoutParams(mParamDisable);
-        btnStore.setLayoutParams(mParamDisable);
-        btnHistory.setLayoutParams(mParamEnable);
+        btnHistory.setEnabled(true);
         ((TextView) findViewById(R.id.deviceName)).setText(R.string.no_device);
     }
 
@@ -318,12 +247,7 @@ public class MainActivity extends Activity {
                     public void run() {
                         Log.d(TAG, "CONNECT_MSG");
                         btnConnectDisconnect.setText("Disconnect");
-                        btnConnectDisconnect.setBackgroundColor(getResources().getColor(R.color.red));
-                        editMessage.setHint(R.string.text_hint);
-                        editMessage.setEnabled(true);
-                        btnReset.setLayoutParams(mParamEnable);
-                        btnStore.setLayoutParams(mParamEnable);
-                        btnHistory.setLayoutParams(mParamDisable);
+                        btnHistory.setEnabled(false);
                         ((TextView) findViewById(R.id.deviceName)).setText(mDevice.getName() + "- Connected");
                         mState = CONNECTED;
                     }
@@ -345,31 +269,18 @@ public class MainActivity extends Activity {
             }
 
             if (action.equals(BleService.ACTION_RX_DATA_AVAILABLE)) {
-                String rxString = intent.getStringExtra(BleService.EXTRA_DATA);
-                if (rxString != null){
-                        if (mDataRecording)
-                            mRecord.add(rxString);
-                }
-            }
-
-            if (action.equals(BleService.ACTION_FILTERED_DATA_AVAILABLE)) {
                 int rxInt = intent.getIntExtra(BleService.EXTRA_DATA, 0);
                 if (rxInt > 0){
                     if(!mShowGraph)
                         startGraph();
                     updateGraph(rxInt);
-                }
-                else if(mShowGraph)
+                }else if(mShowGraph)
                     stopGraph();
             }
 
             if (action.equals(BleService.DEVICE_DOES_NOT_SUPPORT_UART)){
                 showMessage("Device doesn't support UART. Disconnecting");
                 mService.disconnect();
-            }
-
-            if(action.equals(BleService.ACTION_TX_CHAR_WRITE)){
-                Log.d(TAG, "Write RX done");
             }
 
             if(action.equals(BleService.ACTION_HEART_RATE_READ)){
@@ -390,7 +301,6 @@ public class MainActivity extends Activity {
         if(mDataRecording) {
             saveToDisk();
             mDataRecording = false;
-            btnStore.setText("Record");
             mHandler.removeCallbacks(mRecordTimer);
             ((TextView) findViewById(R.id.timer_view)).setText("");
             refreshTimer();
@@ -465,7 +375,6 @@ public class MainActivity extends Activity {
                     return;
                 }
                 if ((MAX_DATA_RECORDING_TIME - mRecTimerCounter) < 5)//Five seconds to the end of timer
-                    ((TextView) findViewById(R.id.timer_view)).setTextColor(getResources().getColor(R.color.green));
                 mRecTimerCounter++;
             }
             mHandler.postDelayed(mRecordTimer, ONE_SECOND);
@@ -475,7 +384,6 @@ public class MainActivity extends Activity {
     private void refreshTimer(){
         mRecTimerCounter = 1;
         hr = min = sec = 0;
-        ((TextView) findViewById(R.id.timer_view)).setTextColor(getResources().getColor(R.color.red));
     }
 
     private void updateTimer(){
@@ -492,7 +400,6 @@ public class MainActivity extends Activity {
         intentFilter.addAction(BleService.DEVICE_DOES_NOT_SUPPORT_UART);
         intentFilter.addAction(BleService.ACTION_TX_CHAR_WRITE);
         intentFilter.addAction(BleService.ACTION_HEART_RATE_READ);
-        intentFilter.addAction(BleService.ACTION_FILTERED_DATA_AVAILABLE);
         return intentFilter;
     }
 

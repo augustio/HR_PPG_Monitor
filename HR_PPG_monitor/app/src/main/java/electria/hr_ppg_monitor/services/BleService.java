@@ -50,8 +50,6 @@ public class BleService extends Service {
             "electria.electriahrm.ACTION_GATT_SERVICES_DISCOVERED";
     public final static String ACTION_RX_DATA_AVAILABLE =
             "electria.electriahrm.ACTION_RX_DATA_AVAILABLE";
-    public final static String ACTION_FILTERED_DATA_AVAILABLE =
-            "electria.electriahrm.ACTION_FILTERED_DATA_AVAILABLE";
     public final static String ACTION_TX_CHAR_WRITE =
             "electria.electriahrm.ACTION_TX_CHAR_WRITE";
     public final static String EXTRA_DATA =
@@ -123,12 +121,11 @@ public class BleService extends Service {
                 if(value > MIN_Y ){
                     value = iIRFilter(value);
                     if(value > 0) {
-                        broadcastUpdate(ACTION_FILTERED_DATA_AVAILABLE, value);
-                        broadcastUpdate(ACTION_RX_DATA_AVAILABLE, Integer.toString(value));
+                        broadcastUpdate(ACTION_RX_DATA_AVAILABLE, value);
                     }
                 }
                 else {
-                    broadcastUpdate(ACTION_FILTERED_DATA_AVAILABLE, 0);
+                    broadcastUpdate(ACTION_RX_DATA_AVAILABLE, 0);
                     mSamples.clear();
                     broadcastUpdate(ACTION_HEART_RATE_READ, 0);
                 }

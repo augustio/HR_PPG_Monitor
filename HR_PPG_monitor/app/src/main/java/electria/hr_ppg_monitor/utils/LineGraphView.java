@@ -32,11 +32,11 @@ public class LineGraphView {
 
 
         final XYMultipleSeriesRenderer renderer = mMultiRenderer;
-        renderer.setBackgroundColor(Color.GRAY);
-        renderer.setMargins(new int[]{10, 10, 10, 10});
-        renderer.setMarginsColor(Color.WHITE);
-        renderer.setAxesColor(Color.BLUE);
-        renderer.setAxisTitleTextSize(24);
+        renderer.setMargins(new int[]{50, 65, 40, 5});
+        renderer.setMarginsColor(Color.argb(0x00, 0x01, 0x01, 0x01));
+        renderer.setShowAxes(false);
+        renderer.setShowLegend(false);
+        renderer.setShowLabels(false);
         renderer.setLegendTextSize(20);
         renderer.setInScroll(true);
         renderer.setPanEnabled(false, false);

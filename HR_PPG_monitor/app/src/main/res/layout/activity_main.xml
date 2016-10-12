@@ -2,125 +2,134 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:orientation="vertical" >
+    android:orientation="vertical"
+    android:background="@drawable/background">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:baselineAligned="false"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/bat_level"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:paddingTop="5dp"/>
-    </LinearLayout>
+            <LinearLayout
+                android:layout_width="150dp"
+                android:layout_alignParentStart="true"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
-    <LinearLayout
-        android:id="@+id/button_layout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal" >
+                <TextView
+                    android:id="@+id/patient_id"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:layout_marginBottom="15dp"
+                    android:textSize="15sp"/>
 
-        <Button
-            android:id="@+id/btn_connect"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="3"
-            android:padding="2dp"
-            android:text="Connect" />
+                <View
+                    android:layout_width="150dp"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="5dp"
+                    android:background="@color/red" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="5dp"
+                        android:textSize="15sp"
+                        android:textColor="@color/red"
+                        android:text="@string/hr"/>
+                    <TextView
+                        android:id="@+id/hr_value"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="5dp"
+                        android:textSize="15sp"
+                        android:textColor="@color/whitegrey"/>
+                </LinearLayout>
 
-        <Button
-            android:id="@+id/btn_reset"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="0"
-            android:padding="2dp"
-            android:text="Reset"/>
+            </LinearLayout>
 
-        <Button
-            android:id="@+id/btn_store"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="0"
-            android:padding="2dp"
-            android:text="Record" />
+            <LinearLayout
+                android:id="@+id/button_layout"
+                android:layout_width="150dp"
+                android:layout_alignParentEnd="true"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="5dp"
+                android:orientation="vertical" >
 
-        <Button
-            android:id="@+id/btn_history"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="2"
-            android:padding="2dp"
-            android:text="History" />
-    </LinearLayout>
+                <Button
+                    android:id="@+id/btn_connect"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp"
+                    android:layout_marginTop="5dp"
+                    android:layout_marginBottom="5dp"
+                    android:background="@drawable/blue_button"
+                    android:textSize="18sp"
+                    android:text="Connect" />
+
+                <Button
+                    android:id="@+id/btn_history"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp"
+                    android:layout_marginTop="5dp"
+                    android:layout_marginBottom="5dp"
+                    android:background="@drawable/blue_button"
+                    android:textSize="18sp"
+                    android:text="History" />
+            </LinearLayout>
+
+        </RelativeLayout>
 
     <TextView
         android:id="@+id/heart_rate"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:textColor="@color/blue"
+        android:textColor="@color/whitegrey"
         android:textSize="50dp" />
 
     <LinearLayout
         android:id="@+id/graph_layout"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="150dp"
+        android:layout_gravity="center"
         android:orientation="vertical" >
 
     </LinearLayout>
 
-    <RelativeLayout android:id="@+id/send_message_layout"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:layout_marginTop="5dp"
-        android:orientation="vertical">
-
-        <EditText android:id="@+id/sendText"
-            android:layout_width="102dp"
-            android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:layout_alignParentLeft="true"
-            android:layout_toLeftOf="@+id/sendButton"
-            android:ems="10" android:enabled="false"
-            android:fontFamily="1" android:lines="1"
-            android:maxLength="20" android:maxLines="1"
-            android:shadowRadius="1"/>
-
-        <Button android:id="@+id/sendButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:layout_alignParentRight="true"
-            android:enabled="false"
-            android:text="Send"/>
-
-    </RelativeLayout>
-
     <RelativeLayout
         android:id="@+id/footer_layout"
         android:layout_width="match_parent"
-        android:layout_height="30dp"
-        android:orientation="vertical" >
+        android:gravity="bottom"
+        android:layout_marginTop="80dp"
+        android:layout_height="100dp">
 
         <TextView
             android:id="@+id/deviceName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentLeft="true"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentStart="true"
             android:text="@string/no_device"
+            android:textColor="@color/whitegrey"
             android:textAppearance="?android:attr/textAppearanceSmall" />
 
         <TextView
             android:id="@+id/timer_view"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentRight="true"
-            android:textColor="@color/red"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentEnd="true"
+            android:textColor="@color/whitegrey"
             android:textAppearance="?android:attr/textAppearanceSmall" />
     </RelativeLayout>
 
