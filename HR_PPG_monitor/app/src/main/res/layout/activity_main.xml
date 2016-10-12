@@ -24,6 +24,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="5dp"
                     android:layout_marginBottom="15dp"
+                    android:textColor="@color/black"
                     android:textSize="15sp"/>
 
                 <View
@@ -45,6 +46,32 @@
                         android:text="@string/hr"/>
                     <TextView
                         android:id="@+id/hr_value"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="5dp"
+                        android:textSize="15sp"
+                        android:textColor="@color/whitegrey"/>
+                </LinearLayout>
+
+                <View
+                    android:layout_width="150dp"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="5dp"
+                    android:background="@color/red" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="5dp"
+                        android:textSize="15sp"
+                        android:textColor="@color/red"
+                        android:text="@string/av_hr"/>
+                    <TextView
+                        android:id="@+id/av_hr_value"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="5dp"
@@ -89,18 +116,12 @@
 
         </RelativeLayout>
 
-    <TextView
-        android:id="@+id/heart_rate"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:textColor="@color/whitegrey"
-        android:textSize="50dp" />
-
     <LinearLayout
         android:id="@+id/graph_layout"
         android:layout_width="match_parent"
-        android:layout_height="150dp"
+        android:layout_height="300dp"
+        android:paddingTop="75dp"
+        android:paddingBottom="75dp"
         android:layout_gravity="center"
         android:orientation="vertical" >
 
@@ -110,7 +131,6 @@
         android:id="@+id/footer_layout"
         android:layout_width="match_parent"
         android:gravity="bottom"
-        android:layout_marginTop="80dp"
         android:layout_height="100dp">
 
         <TextView

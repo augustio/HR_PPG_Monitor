@@ -26,4 +26,9 @@
     <string name="location_other">Reserved</string>
     <string name="ecg_files_list">PPG RECORDS</string>
     <string name="hr">HR</string>
+    <string name="av_hr">AV. HR</string>
+    <string name="title_activity_connect_dialog">ConnectDialog</string>
+    <string name="sensor_id">SENSOR ID</string>
+    <string name="patient_id">PATIENT ID</string>
+    <string name="scan_sensor_title">Sensors Scanner</string>
 </resources>
