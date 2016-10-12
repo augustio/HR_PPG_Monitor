@@ -24,7 +24,7 @@
     <string name="text_hint">Click here to write text</string>
     <string name="sensor_position_label">sensor position </string>
     <string name="location_other">Reserved</string>
-    <string name="ecg_files_list">PPG RECORDS</string>
+    <string name="ecg_files_list">Heart Rate Records</string>
     <string name="hr">HR</string>
     <string name="av_hr">AV. HR</string>
     <string name="title_activity_connect_dialog">ConnectDialog</string>
