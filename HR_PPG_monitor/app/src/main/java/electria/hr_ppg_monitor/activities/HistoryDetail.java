@@ -2,78 +2,91 @@ package electria.hr_ppg_monitor.activities;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.graphics.Point;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.gson.stream.JsonReader;
+
 import org.achartengine.GraphicalView;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.HashMap;
 
-import electria.hr_ppg_monitor.utils.LineGraphView;
 import electria.hr_ppg_monitor.R;
 import electria.hr_ppg_monitor.measurements.PPGMeasurement;
+import electria.hr_ppg_monitor.utils.HRGraphView;
 
 public class HistoryDetail extends Activity {
 
     private static final String TAG = HistoryDetail.class.getSimpleName();
-    private static final String SUCCESS = "File Access Successful";
-    private static final String SERVER_ERROR = "No Response From Server!";
     private static final String NO_NETWORK_CONNECTION = "Not Connected to Network";
-    private static final String CONNECTION_ERROR= "Server Not Reachable, Check Internet Connection";
-    private static final String SERVER_URL = "http://52.18.112.240:3000/records";
-    private static final int X_RANGE = 500;
-    private static final int MIN_Y = 30000;//Minimum PPG data value
-    private GraphicalView mGraphView;
-    private LineGraphView mLineGraph;
-    private ViewGroup mHistLayout;
-    private Button btnSendEmail, btnSendCloud;
-    private TextView accessStatus;
+    private Button btnSend;
     private String mFPath;
     private File mFile;
     private PPGMeasurement ppgM;
+    private HRGraphView mHrGraph;
+    private GraphicalView mGraphView;
+    private LinearLayout mGraphLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_history_detail);
-        btnSendEmail = (Button)findViewById(R.id.send_email);
-        btnSendCloud = (Button)findViewById(R.id.send_cloud);
-        accessStatus = (TextView)findViewById(R.id.server_access_status);
-        btnSendEmail.setEnabled(false);
-        btnSendCloud.setEnabled(false);
+
+        btnSend = (Button)findViewById(R.id.send_email);
+        btnSend.setEnabled(false);
+        TextView patientIdTv, hrTv, avHrTv, recDurationTv;
+        patientIdTv = (TextView)findViewById(R.id.patient_id_tv);
+        hrTv = (TextView)findViewById(R.id.hr_value_tv);
+        avHrTv = (TextView)findViewById(R.id.av_hr_value_tv);
+        recDurationTv = (TextView)findViewById(R.id.duration_tv);
+        mGraphLayout = (LinearLayout)findViewById(R.id.hr_graph_layout);
+
         mFile = null;
-        ppgM = new PPGMeasurement();
-        Bundle extras = getIntent().getExtras();
-        if (extras == null) {
+        ppgM = null;
+
+        Intent intent = getIntent();
+        mFPath = intent.getStringExtra(Intent.EXTRA_TEXT);
+        if (mFPath == null) {
             finish();
         }
-        mFPath = extras.getString(Intent.EXTRA_TEXT);
+
         if(isExternalStorageReadable()){
             if((mFile = validateFile(mFPath))  != null){
-                setGraphView();
-                new DisplayECGTask().execute(mFile);
+                ppgM = getData(mFile);
+                if(ppgM != null) {
+                    btnSend.setEnabled(true);
+                    if(!ppgM.isEmpty()){
+                        ArrayList<Integer> hrs = ppgM.getData(1);
+                        String  hr = getHr(hrs) + " BPM";
+                        String  av = getAvHr(hrs) + " BPM";
+                        String  duration = getDuration(ppgM.getStart(), ppgM.getEnd()) + " Seconds";
+
+                        patientIdTv.setText(ppgM.getPatientId());
+                        hrTv.setText(hr);
+                        avHrTv.setText(av);
+                        recDurationTv.setText(duration);
+
+                        setGraphView();
+                        displayGraph(hrs);
+
+                    }else
+                        showMessage("Empty Record");
+                }
             }
             else{
                 finish();
@@ -84,7 +97,7 @@ public class HistoryDetail extends Activity {
             finish();
         }
 
-        btnSendEmail.setOnClickListener(new View.OnClickListener() {
+        btnSend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if(hasNetworkConnection())
@@ -94,158 +107,45 @@ public class HistoryDetail extends Activity {
                     showMessage(NO_NETWORK_CONNECTION);
             }
         });
-
-        btnSendCloud.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(hasNetworkConnection())
-                    // call AsynTask to perform network operation on separate thread
-                    new HttpAsyncTask().execute(SERVER_URL);
-                else
-                    showMessage(NO_NETWORK_CONNECTION);
-            }
-        });
     }
 
     //Prepare the initial GUI for graph
     private void setGraphView() {
-        mLineGraph = new LineGraphView();
-        mGraphView = mLineGraph.getView(this);
-        mHistLayout = (ViewGroup) findViewById(R.id.history_detail);
-        mHistLayout.addView(mGraphView);
+        mHrGraph = new HRGraphView();
+        mGraphView = mHrGraph.getView(this);
+        //m.setYRange(MIN_Y, MAX_Y);
+        mGraphLayout.addView(mGraphView);
     }
 
-    private class DisplayECGTask extends AsyncTask<File, Integer, String> {
-
-        private Exception exception;
-        private int xValue = 0;
-
-        @Override
-        protected String doInBackground(File... mFiles) {
-            try {
-                BufferedReader buf = new BufferedReader(new FileReader(mFiles[0]));
-                ppgM.fromJson(buf.readLine());
-                buf.close();
-                String data = ppgM.getData().substring(1);//Remove opening square bracket
-                data = data.substring(1).replace("]", "");//Remove closing square bracket
-                String[] dataArray = data.split(",");
-                for( int counter = 0; counter < dataArray.length; counter++){
-                    String ppgSample = dataArray[counter].trim();
-                    if(android.text.TextUtils.isDigitsOnly(ppgSample)) {
-                        int value = Integer.parseInt(ppgSample);
-                        if(value > MIN_Y)
-                            publishProgress(value);
-                    }
-                    counter++;
-                }
-            } catch (Exception e) {
-                exception = e;
-                return null;
-            }
-            return SUCCESS;
+    //Plot a new set of two PPG values on the graph and present on the GUI
+    private void displayGraph(ArrayList<Integer> hrs) {
+        int counter = 0;
+        for(int hr : hrs){
+            mHrGraph.addValue(counter, counter, hr);
+            counter++;
+            mGraphView.repaint();
         }
+    }
 
-        /*Displays PPG data on the graph*/
-        protected void onProgressUpdate(Integer... value) {
-            int yValue = value[0];
-            if(xValue > X_RANGE){
-                xValue = 0;
-            }
-            updateGraph(xValue, yValue);
-            xValue++;
+    private PPGMeasurement getData(File f){
+        PPGMeasurement ppgm = new PPGMeasurement();
+        try {
+            BufferedReader buf = new BufferedReader(new FileReader(f));
+            JsonReader reader = new JsonReader(new StringReader(buf.readLine()));
+            reader.setLenient(true);
+            ppgm.fromJson(reader);
+            buf.close();
+        } catch (Exception e) {
+            Log.e(TAG, "File Access threw " + e.getMessage());
         }
-
-        /*Handles any exception and reports result of operation*/
-        @Override
-        protected void onPostExecute(String result) {
-            if(exception != null){
-                Log.e(TAG, exception.toString());
-                showMessage("Problem accessing mFile");
-                finish();
-            }
-            else {
-                Log.d(TAG, SUCCESS);
-                btnSendEmail.setEnabled(true);
-                btnSendCloud.setEnabled(true);
-            }
-        }
+        return ppgm;
     }
 
     /* Checks if external storage is available to at least read */
     public boolean isExternalStorageReadable() {
         String state = Environment.getExternalStorageState();
-        if (Environment.MEDIA_MOUNTED.equals(state) ||
-                Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
-            return true;
-        }
-        return false;
-    }
-
-    //Add a point to the graph
-    private void updateGraph(int x, int y){
-        if(mLineGraph.getItemCount() > x){
-            mLineGraph.removeValue(x);
-        }
-        mLineGraph.addValue(x, x*2, y);
-        mGraphView.repaint();
-    }
-
-    public static String POST(String url, PPGMeasurement ecgM){
-        InputStream inputStream;
-        String result;
-        try {
-            HttpClient httpclient = new DefaultHttpClient();
-            HttpPost httpPost = new HttpPost(url);
-            String json = ecgM.toJson();
-
-            StringEntity se = new StringEntity(json);
-            httpPost.setEntity(se);
-
-            httpPost.setHeader("Accept", "application/json");
-            httpPost.setHeader("Content-type", "application/json");
-
-            HttpResponse httpResponse = httpclient.execute(httpPost);
-
-            HttpEntity httpEntity = httpResponse.getEntity();
-
-            if(httpEntity != null){
-                inputStream = httpEntity.getContent();
-                result = convertInputStreamToString(inputStream);
-            }else
-                result = SERVER_ERROR;
-
-        } catch (Exception e) {
-            Log.d("InputStream", e.getLocalizedMessage());
-            result =  CONNECTION_ERROR;
-        }
-
-        return result;
-    }
-
-    private class HttpAsyncTask extends AsyncTask<String, String, String> {
-        @Override
-        protected String doInBackground(String... urls) {
-            publishProgress("Sending Data to Server ...");
-            return POST(urls[0], ppgM);
-        }
-
-        protected void onProgressUpdate(String... value) {
-            accessStatus.setText(value[0]);
-        }
-
-        // onPostExecute displays the results of the AsyncTask.
-        @Override
-        protected void onPostExecute(String result) {
-            accessStatus.setText("");
-            if (result.equals(SERVER_ERROR))
-                showMessage("Error Connecting to Server");
-            else if (result.equals(CONNECTION_ERROR))
-                showMessage(CONNECTION_ERROR);
-            else {
-                showMessage("Data Sent");
-            }
-        }
-
+        return (Environment.MEDIA_MOUNTED.equals(state) ||
+                Environment.MEDIA_MOUNTED_READ_ONLY.equals(state));
     }
 
     //Send PPG data as attachment to a specified Email address
@@ -261,6 +161,41 @@ public class HistoryDetail extends Activity {
         }catch (android.content.ActivityNotFoundException ex) {
             showMessage("No email clients installed.");
         }
+    }
+
+    private int getDuration(long start, long end){
+        return (int)(end - start)/1000;
+    }
+
+    private int getHr(ArrayList<Integer> hrs){
+        int maxFreq = 0, maxFreqKey = 0;
+        HashMap<Integer, Integer> hrMap = new HashMap<>();
+        for(int value : hrs){
+            if(hrMap.containsKey(value)) {
+                int item = hrMap.get(value);
+                item++;
+                hrMap.put(value, item);
+            }else{
+                hrMap.put(value, 1);
+            }
+        }
+        for(int key : hrMap.keySet()){
+            int item = hrMap.get(key);
+            if(item > maxFreq) {
+                maxFreq = item;
+                maxFreqKey = key;
+            }
+        }
+        return maxFreqKey;
+    }
+
+    private int getAvHr(ArrayList<Integer> hrs){
+        int sum = 0;
+        for(int value : hrs){
+            sum += value;
+        }
+
+        return sum/hrs.size();
     }
 
     /*Checks if mFile is a text mFile and is not empty*/
@@ -279,24 +214,10 @@ public class HistoryDetail extends Activity {
         return f;
     }
 
-    private static String convertInputStreamToString(InputStream inputStream) throws IOException {
-        BufferedReader bufferedReader = new BufferedReader( new InputStreamReader(inputStream));
-        String line = "";
-        String result = "";
-        while((line = bufferedReader.readLine()) != null)
-            result += line;
-
-        inputStream.close();
-        return result;
-    }
-
     public boolean hasNetworkConnection(){
         ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Activity.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
-        if (networkInfo != null && networkInfo.isConnected())
-            return true;
-        else
-            return false;
+        return (networkInfo != null && networkInfo.isConnected());
     }
 
     private void showMessage(String msg) {

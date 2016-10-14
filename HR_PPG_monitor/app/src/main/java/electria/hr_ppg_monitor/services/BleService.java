@@ -18,7 +18,9 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -34,13 +36,21 @@ public class BleService extends Service {
     private BluetoothGatt mBluetoothGatt;
     private BluetoothGattCharacteristic mRXCharacteristic;
     private BluetoothGattCharacteristic mTXCharacteristic;
-    private ArrayList<Integer> mSamples;
+    private ArrayList<Integer> mSamples, mFilteredSamples, mSamples4HRCalc;
     private int mConnectionState = STATE_DISCONNECTED;
+    private ArrayList<Double> mMaxPoints = new ArrayList<>();
+    private ArrayList<Double> mMinPoints = new ArrayList<>();
+    private ArrayList<Double> mMaxPos = new ArrayList<>();
+    private ArrayList<Double> mMinPos = new ArrayList<>();
+    private int mHr = 0;
+    private int count = 0;
 
     private static final int STATE_DISCONNECTED = 0;
     private static final int STATE_CONNECTING = 1;
     private static final int STATE_CONNECTED = 2;
     private static final int MIN_Y = 40000;//Minimum PPG data value
+    private static final int SAMPLING_RATE = 100;
+    private static final int TEN_SECONDS_SAMPLES = 1000;
 
     public final static String ACTION_GATT_CONNECTED =
             "electria.electriahrm.ACTION_GATT_CONNECTED";
@@ -75,6 +85,8 @@ public class BleService extends Service {
                 intentAction = ACTION_GATT_CONNECTED;
                 mConnectionState = STATE_CONNECTED;
                 mSamples = new ArrayList<>();
+                mSamples4HRCalc = new ArrayList<>();
+                mFilteredSamples = new ArrayList<>();
                 broadcastUpdate(intentAction);
                 Log.d(TAG, "Connected to GATT server.");
                 // Attempts to discover services after successful connection.
@@ -119,15 +131,19 @@ public class BleService extends Service {
             if(characteristic.getUuid().equals(RX_CHAR_UUID)) {
                 int value = Integer.parseInt(characteristic.getStringValue(0).trim());
                 if(value > MIN_Y ){
-                    value = iIRFilter(value);
+                    if(mSamples4HRCalc.size() == TEN_SECONDS_SAMPLES){
+                        calculateHR(new ArrayList<>(mSamples4HRCalc));
+                        mSamples4HRCalc.clear();
+                    }
+                    value = iIRFilter(detrend(value));
                     if(value > 0) {
+                        mSamples4HRCalc.add(value);
                         broadcastUpdate(ACTION_RX_DATA_AVAILABLE, value);
                     }
                 }
                 else {
                     broadcastUpdate(ACTION_RX_DATA_AVAILABLE, 0);
                     mSamples.clear();
-                    broadcastUpdate(ACTION_HEART_RATE_READ, 0);
                 }
             }
         }
@@ -172,17 +188,28 @@ public class BleService extends Service {
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
-    //21 point moving average filter
+    //31 point moving average filter
     private int iIRFilter(int sample){
         int filtered = 0;
         mSamples.add(sample);
-        if(mSamples.size() < 21)
+        if(mSamples.size() < 31)
             return filtered;
-        for(int i = 0; i < 21; i++)
+        for(int i = 0; i < 31; i++)
             filtered += mSamples.get(i);
         mSamples.remove(0);
-        filtered = filtered/21;
-        return filtered;
+        return filtered/31;
+    }
+
+    private int detrend(int sample){
+        int detrended = 0;
+        mFilteredSamples.add(sample);
+        if(mFilteredSamples.size() < 100)
+            return detrended;
+        for(int i = 0; i < 100; i++)
+            detrended += mFilteredSamples.get(i);
+        mFilteredSamples.remove(0);
+        detrended = detrended/100;
+        return Math.abs(sample - detrended);
     }
 
     public class LocalBinder extends Binder {
@@ -343,5 +370,78 @@ public class BleService extends Service {
             Log.e(TAG, "Charateristic not found!");
             broadcastUpdate(DEVICE_DOES_NOT_SUPPORT_UART);
         }
+    }
+
+    private void calculateHR(final ArrayList<Integer> samples){
+        new Thread(new Runnable() {
+            public void run(){
+                double mx = Double.NEGATIVE_INFINITY, mn = Double.POSITIVE_INFINITY;
+                double mnPos = Double.NaN, mxPos = Double.NaN;
+                double lookForMax = 1;
+                double delta;
+                double sum = 0;
+
+                for(int i = 0; i < samples.size(); i++){
+                    sum+=samples.get(i);
+                }
+                delta = (sum/samples.size())*0.5;
+
+                for(int i = 0; i < samples.size(); i++) {
+                    double cur = samples.get(i);
+                    if (cur > mx) {
+                        mx = cur;
+                        mxPos = i;
+                    }
+                    if (cur < mn) {
+                        mn = cur;
+                        mnPos = i;
+                    }
+
+                    if(lookForMax == 1){
+                        if(cur < (mx - delta )){
+                            mMaxPoints.add(mx);
+                            mMaxPos.add(mxPos);
+                            mn = cur;
+                            mnPos = i;
+                            lookForMax = 0;
+                        }
+                    }else{
+                        if(cur > (mn + delta)){
+                            mMinPoints.add(mn);
+                            mMinPos.add(mnPos);
+                            mx = cur;
+                            mxPos = i;
+                            lookForMax = 1;
+                        }
+                    }
+                }
+                double peaks = mMaxPoints.size();
+                double duration = samples.size()/SAMPLING_RATE;
+                mHr = (int)Math.round((peaks*60)/duration);
+                Log.w(TAG, "Number of peaks: " + mMaxPoints.size());
+                broadcastUpdate(ACTION_HEART_RATE_READ, (int)Math.round(mHr));
+                /*if(mMaxPoints.size() > 1) {
+                    double sum = 0;
+                    double x = 0;
+                    for (int i = 1; i < mMaxPos.size(); i++){
+                        sum += (mMaxPos.get(i) - mMaxPos.get(i - 1));
+                        x++;
+                    }
+                    double av = sum/x;
+                    double time = av/100;
+                    double hr = 60/time;
+
+                    if(hr < 60)
+                        hr = 60;
+                    mHr = (mHr * count) + (int)Math.round(hr);
+                    count++;
+                    mHr = mHr/count;
+                }*/
+                mMaxPoints.clear();
+                mMaxPos.clear();
+                mMinPoints.clear();
+                mMinPos.clear();
+            }
+        }).start();
     }
 }

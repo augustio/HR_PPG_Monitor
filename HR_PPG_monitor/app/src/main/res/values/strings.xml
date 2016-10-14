@@ -31,4 +31,7 @@
     <string name="sensor_id">SENSOR ID</string>
     <string name="patient_id">PATIENT ID</string>
     <string name="scan_sensor_title">Sensors Scanner</string>
+    <string name="send">Send as Email</string>
+    <string name="hr_measurement">Heart Rate Measurement</string>
+    <string name="record_duration">DURATION</string>
 </resources>

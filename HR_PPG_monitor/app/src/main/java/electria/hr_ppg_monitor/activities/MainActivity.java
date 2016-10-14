@@ -7,8 +7,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -34,7 +32,6 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.view.ViewGroup;
@@ -55,19 +52,20 @@ public class MainActivity extends Activity {
     private static final int REQUEST_CONNECT_PARAMS = 3;
     private static final String TAG = "HR_PPG_MONITOR";
     private static final String DIRECTORY_NAME = "/PPGDATA";
-    private static final String PATIENT_DEVICE_IDS_FILE_PATH = "patient_device_ids.txt";
+    public static final String PATIENT_DEVICE_IDS_FILE_PATH = "patient_device_ids.txt";
     private static final int CONNECTED = 20;
     private static final int DISCONNECTED = 21;
     private static final int CONNECTING = 22;
     private static final int X_RANGE = 400;
-    private static final int MAX_DATA_RECORDING_TIME = 120;//Two minutes(60 seconds)
+    private static final int MAX_DATA_RECORDING_TIME = 120;//Two minutes
     private static final int SECONDS_IN_ONE_MINUTE = 60;
     private static final int SECONDS_IN_ONE_HOUR = 3600;
     private static final int ONE_SECOND = 1000;// 1000 milliseconds in one second
 
     private boolean mShowGraph;
     private boolean mGraphViewActive;
-    private boolean mDataRecording;
+    private boolean mRecording;
+    private boolean mFingerDetected;
 
     private GraphicalView mGraphView;
     private LineGraphView mLineGraph;
@@ -76,8 +74,9 @@ public class MainActivity extends Activity {
     private ViewGroup mainLayout;
     private List<String> mRecord;
 
-    private int mCounter;
+    private int mCounter, mHrCounter;
     private int mRecTimerCounter, min, sec, hr;
+    private int mAvHr;
     private BleService mService;
     private int mState;
     private String mTimerString, mSensorId, mPatientId;
@@ -104,11 +103,13 @@ public class MainActivity extends Activity {
         patientId = (TextView) findViewById(R.id.patient_id);
         mRecord = new ArrayList<>();
 
-        mDataRecording = false;
+        mRecording = false;
         mShowGraph = false;
         mGraphViewActive = false;
+        mFingerDetected = false;
 
         mCounter = 0;
+        mAvHr = mHrCounter = 0;
         mRecTimerCounter = 1;
         min = sec =  hr = 0;
         mService = null;
@@ -118,6 +119,7 @@ public class MainActivity extends Activity {
         mPatientId = "";
         mState = DISCONNECTED;
         mHandler = new Handler();
+        ppgM = null;
 
         service_init();
 
@@ -155,8 +157,7 @@ public class MainActivity extends Activity {
                 stopRecordingData();
             }
             else{
-                ppgM = new PPGMeasurement(mDevice.getName(),
-                        new SimpleDateFormat("yyMMddHHmmss", Locale.US).format(new Date()));
+
                 mDataRecording = true;
                 mRecordTimer.run();
             }
@@ -222,18 +223,23 @@ public class MainActivity extends Activity {
 
     private void setHeartRateValue(int value) {
         if (value != 0) {
+            double sum = (mAvHr*mHrCounter) + value;
+            mHrCounter++;
+            mAvHr = (int)Math.round(sum/mHrCounter);
+            avHrView.setText(mAvHr + "BPM");
             hrView.setText(value + "BPM");
         } else {
             hrView.setText(" ");
+            avHrView.setText(" ");
         }
     }
 
     private void clearGraph() {
         if(mGraphViewActive) {
             mGraphViewActive = false;
-            mShowGraph = false;
             mLineGraph.clearGraph();
             mCounter = 0;
+            mAvHr = 0;
             mainLayout.removeView(mGraphView);
             setHeartRateValue(0);
         }
@@ -287,7 +293,7 @@ public class MainActivity extends Activity {
                         mService.close();
                         clearGraph();
                         resetGUIComponents();
-                        if(mDataRecording)
+                        if(mRecording)
                             stopRecordingData();
                         mState = DISCONNECTED;
                     }
@@ -297,11 +303,29 @@ public class MainActivity extends Activity {
             if (action.equals(BleService.ACTION_RX_DATA_AVAILABLE)) {
                 int rxInt = intent.getIntExtra(BleService.EXTRA_DATA, 0);
                 if (rxInt > 0){
+                    if(!mFingerDetected){
+                        mFingerDetected = true;
+                        startRecordingData();
+                    }
+
+                    if(mRecording) {
+                        ppgM.addToData(rxInt, 0);
+                        ppgM.setEnd(System.currentTimeMillis());
+                    }
+
                     if(!mShowGraph)
                         startGraph();
+
                     updateGraph(rxInt);
-                }else if(mShowGraph)
-                    stopGraph();
+                }else{
+                    if(mFingerDetected) {
+                        mFingerDetected = false;
+                        stopRecordingData();
+                    }
+                    if(mShowGraph)
+                        mShowGraph = false;
+                        stopGraph();
+                }
             }
 
             if (action.equals(BleService.DEVICE_DOES_NOT_SUPPORT_UART)){
@@ -310,8 +334,16 @@ public class MainActivity extends Activity {
             }
 
             if(action.equals(BleService.ACTION_HEART_RATE_READ)){
-                if(mShowGraph == true)
-                    setHeartRateValue(intent.getIntExtra(BleService.EXTRA_DATA, 0));
+                int hr = intent.getIntExtra(BleService.EXTRA_DATA, 0);
+                if(mShowGraph && mFingerDetected) {
+                    setHeartRateValue(hr);
+                }else{
+                    mAvHr = 0;
+                }
+                if(mRecording){
+                    ppgM.addToData(hr, 1);
+                    ppgM.setEnd(System.currentTimeMillis());
+                }
             }
         }
     };
@@ -323,38 +355,39 @@ public class MainActivity extends Activity {
         LocalBroadcastManager.getInstance(this).registerReceiver(BLEStatusChangeReceiver, makeGattUpdateIntentFilter());
     }
 
+    private void startRecordingData(){
+        ppgM = new PPGMeasurement(mPatientId, System.currentTimeMillis());
+        mRecording = true;
+        mRecordTimer.run();
+    }
+
     private void stopRecordingData(){
-        if(mDataRecording) {
-            saveToDisk();
-            mDataRecording = false;
+        if(mRecording) {
+            mRecording = false;
+            saveRecord();
             mHandler.removeCallbacks(mRecordTimer);
             ((TextView) findViewById(R.id.timer_view)).setText("");
             refreshTimer();
         }
     }
 
-    private void saveToDisk(){
-        if(mRecord.isEmpty()){
-            showMessage("No data recorded");
-            return;
-        }
-
+    private void saveRecord(){
         if(isExternalStorageWritable()){
             new Thread(new Runnable(){
                 public void run(){
                     File root = android.os.Environment.getExternalStorageDirectory();
                     File dir = new File (root.getAbsolutePath() + DIRECTORY_NAME);
+                    PPGMeasurement record = new PPGMeasurement();
+                    record.copy(ppgM);
                     if(!dir.isDirectory())
                         dir.mkdirs();
                     File file;
-                    String fileName = ppgM.getSensor()+"_"+ppgM.getTimeStamp()+".txt";
+                    String start = new SimpleDateFormat("yyMMddHHmmss", Locale.US).format(record.getStart());
+                    String fileName = record.getPatientId()+"_"+start+".txt";
                     file = new File(dir, fileName);
-                    ppgM.setData(Arrays.toString(mRecord.toArray(new String[mRecord.size()])));
-                    mRecord.clear();
                     try {
                         FileWriter fw = new FileWriter(file, true);
-                        fw.append(ppgM.toJson());
-                        ppgM = null;
+                        fw.append(record.toJson());
                         fw.flush();
                         fw.close();
                         showMessage("PPG Record Saved");
@@ -425,7 +458,7 @@ public class MainActivity extends Activity {
     private Runnable mRecordTimer = new Runnable() {
         @Override
         public void run() {
-            if(!mRecord.isEmpty()) {
+            if (mRecTimerCounter < MAX_DATA_RECORDING_TIME && mRecording) {
                 if (mRecTimerCounter < SECONDS_IN_ONE_MINUTE) {
                     sec = mRecTimerCounter;
                 } else if (mRecTimerCounter < SECONDS_IN_ONE_HOUR) {
@@ -436,18 +469,13 @@ public class MainActivity extends Activity {
                     min = (mRecTimerCounter % SECONDS_IN_ONE_HOUR) / SECONDS_IN_ONE_MINUTE;
                     min = (mRecTimerCounter % SECONDS_IN_ONE_HOUR) % SECONDS_IN_ONE_MINUTE;
                 }
-                updateTimer();
-                if (mRecTimerCounter >= MAX_DATA_RECORDING_TIME) {
-                    stopRecordingData();
-                    if (mShowGraph) {
-                        stopGraph();
-                    }
-                    return;
-                }
-                if ((MAX_DATA_RECORDING_TIME - mRecTimerCounter) < 5)//Five seconds to the end of timer
+
                 mRecTimerCounter++;
+                updateTimer();
+                mHandler.postDelayed(mRecordTimer, ONE_SECOND);
+            }else{
+                stopRecordingData();
             }
-            mHandler.postDelayed(mRecordTimer, ONE_SECOND);
         }
     };
 

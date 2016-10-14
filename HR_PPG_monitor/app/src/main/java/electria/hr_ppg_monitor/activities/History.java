@@ -22,6 +22,7 @@ import electria.hr_ppg_monitor.R;
 public class History extends Activity {
 
     private static final String TAG = History.class.getSimpleName();
+    public static final String PATIENT_DEVICE_IDS_FILE_PATH = "patient_device_ids.txt";
 
     private ListView mHistView;
     private ArrayAdapter<String> mListAdapter;
@@ -38,11 +39,11 @@ public class History extends Activity {
         mHistView.setOnItemClickListener(mFileClickListener);
         registerForContextMenu(mHistView);
 
-        Bundle extras = getIntent().getExtras();
-        if (extras == null) {
+        Intent intent = getIntent();
+        mDirName = intent.getStringExtra(Intent.EXTRA_TEXT);
+        if (mDirName == null) {
             finish();
         }
-        mDirName = extras.getString(Intent.EXTRA_TEXT);
         readDirectory(mDirName);
     }
 
@@ -84,11 +85,10 @@ public class History extends Activity {
             File dir = new File (root.getAbsolutePath() + dirName);
             if(!dir.exists()) {
                 showMessage("No PPG file saved");
-                return;
             }
             else{
                 for (File f : dir.listFiles()) {
-                    if (f.isFile())
+                    if (f.isFile() && !f.getName().equals(PATIENT_DEVICE_IDS_FILE_PATH))
                         mListAdapter.add(f.getName()+"\n"+getFileSize(f.length()));
                 }
             }
@@ -101,11 +101,8 @@ public class History extends Activity {
     /* Checks if external storage is available to at least read */
     public boolean isExternalStorageReadable() {
         String state = Environment.getExternalStorageState();
-        if (Environment.MEDIA_MOUNTED.equals(state) ||
-                Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
-            return true;
-        }
-        return false;
+        return (Environment.MEDIA_MOUNTED.equals(state) ||
+                Environment.MEDIA_MOUNTED_READ_ONLY.equals(state));
     }
 
     private String getFileSize(double len){
@@ -128,9 +125,8 @@ public class History extends Activity {
     private String getFilePath(int pos){
         String item = mListAdapter.getItem(pos);//Get item from list adapter
         String fn = item.substring(0, item.indexOf('\n'));//Get filename from item string
-        String path = android.os.Environment.getExternalStorageDirectory()+
+        return android.os.Environment.getExternalStorageDirectory()+
                 mDirName+"/"+fn;
-        return path;
     }
 
     private void deletePPGFile(AdapterContextMenuInfo info){

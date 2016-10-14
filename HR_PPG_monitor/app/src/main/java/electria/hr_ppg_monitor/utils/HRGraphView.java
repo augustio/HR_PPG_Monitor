@@ -18,26 +18,28 @@ import org.achartengine.renderer.XYSeriesRenderer;
 import android.content.Context;
 import android.graphics.Color;
 
-public class LineGraphView {
+public class HRGraphView {
     private TimeSeries mSeries = new TimeSeries("");
     private XYMultipleSeriesDataset mDataset = new XYMultipleSeriesDataset();
     private XYMultipleSeriesRenderer mMultiRenderer = new XYMultipleSeriesRenderer();
 
-    public LineGraphView() {
+    public HRGraphView() {
         XYSeriesRenderer mRenderer = new XYSeriesRenderer();
         mDataset.addSeries(mSeries);
         mRenderer.setColor(Color.RED);
-        mRenderer.setLineWidth(10.0f);
+        mRenderer.setLineWidth(5);
 
 
 
         final XYMultipleSeriesRenderer renderer = mMultiRenderer;
         renderer.setMargins(new int[]{50, 65, 40, 5});
         renderer.setMarginsColor(Color.argb(0x00, 0x01, 0x01, 0x01));
-        renderer.setShowAxes(false);
-        renderer.setShowLegend(false);
-        renderer.setShowLabels(false);
-        renderer.setLegendTextSize(20);
+        renderer.setAxesColor(Color.BLACK);
+        renderer.setLabelsTextSize(25);
+        renderer.setXTitle("HR (i = 0, 1, ...n)");
+        renderer.setYTitle("HR (BPS)");
+        renderer.setAxisTitleTextSize(25);
+        renderer.setLegendTextSize(25);
         renderer.setInScroll(true);
         renderer.setPanEnabled(true, true);
         renderer.setZoomEnabled(false, false);
