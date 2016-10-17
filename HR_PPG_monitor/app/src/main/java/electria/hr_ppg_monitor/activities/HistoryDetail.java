@@ -9,7 +9,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -23,8 +22,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.StringReader;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Locale;
 
 import electria.hr_ppg_monitor.R;
 import electria.hr_ppg_monitor.measurements.PPGMeasurement;
@@ -49,11 +50,12 @@ public class HistoryDetail extends Activity {
 
         btnSend = (Button)findViewById(R.id.send_email);
         btnSend.setEnabled(false);
-        TextView patientIdTv, hrTv, avHrTv, recDurationTv;
+        TextView patientIdTv, hrTv, avHrTv, recDurationTv, timeTv;
         patientIdTv = (TextView)findViewById(R.id.patient_id_tv);
         hrTv = (TextView)findViewById(R.id.hr_value_tv);
         avHrTv = (TextView)findViewById(R.id.av_hr_value_tv);
         recDurationTv = (TextView)findViewById(R.id.duration_tv);
+        timeTv = (TextView) findViewById(R.id.time_tv);
         mGraphLayout = (LinearLayout)findViewById(R.id.hr_graph_layout);
 
         mFile = null;
@@ -75,12 +77,11 @@ public class HistoryDetail extends Activity {
                         String  hr = getHr(hrs) + " BPM";
                         String  av = getAvHr(hrs) + " BPM";
                         String  duration = getDuration(ppgM.getStart(), ppgM.getEnd()) + " Seconds";
-
                         patientIdTv.setText(ppgM.getPatientId());
                         hrTv.setText(hr);
                         avHrTv.setText(av);
                         recDurationTv.setText(duration);
-
+                        timeTv.setText(formatDate(ppgM.getStart()));
                         setGraphView();
                         displayGraph(hrs);
 
@@ -196,6 +197,10 @@ public class HistoryDetail extends Activity {
         }
 
         return sum/hrs.size();
+    }
+
+    private String formatDate(long tStamp){
+        return new SimpleDateFormat("EE, dd MMM yyyy HH:mm:ss", Locale.US).format(tStamp);
     }
 
     /*Checks if mFile is a text mFile and is not empty*/

@@ -5,4 +5,4 @@
     android:layout_height="wrap_content"
     android:singleLine="false"
     android:textSize="20dp"
-    android:textColor="@color/red"/>
+    android:textColor="@color/blue"/>

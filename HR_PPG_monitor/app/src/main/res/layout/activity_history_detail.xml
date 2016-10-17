@@ -15,6 +15,17 @@
         android:textAlignment="center"
         android:text="@string/hr_measurement"/>
 
+    <TextView
+        android:id="@+id/time_tv"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="15sp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:textAlignment="center"
+        android:textColor="@color/blue"/>
+
 
     <RelativeLayout
         android:layout_width="match_parent"

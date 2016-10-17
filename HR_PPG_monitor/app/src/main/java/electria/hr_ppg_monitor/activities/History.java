@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.Log;
 import android.view.ContextMenu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -16,6 +17,11 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Toast;
 
 import java.io.File;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Locale;
 
 import electria.hr_ppg_monitor.R;
 
@@ -26,6 +32,7 @@ public class History extends Activity {
 
     private ListView mHistView;
     private ArrayAdapter<String> mListAdapter;
+    private ArrayList<String> mFNameList;
     private String mDirName;
 
     @Override
@@ -38,6 +45,8 @@ public class History extends Activity {
         mHistView.setAdapter(mListAdapter);
         mHistView.setOnItemClickListener(mFileClickListener);
         registerForContextMenu(mHistView);
+
+        mFNameList = new ArrayList<>();
 
         Intent intent = getIntent();
         mDirName = intent.getStringExtra(Intent.EXTRA_TEXT);
@@ -53,7 +62,8 @@ public class History extends Activity {
         public void onItemClick(AdapterView<?> parent, View view, int position, long id){
 
             Intent intent = new Intent(History.this, HistoryDetail.class);
-            intent.putExtra(Intent.EXTRA_TEXT, getFilePath(position));
+            intent.putExtra(Intent.EXTRA_TEXT, android.os.Environment
+                    .getExternalStorageDirectory() + mDirName + "/" + mFNameList.get(position));
             startActivity(intent);
         }
     };
@@ -88,8 +98,10 @@ public class History extends Activity {
             }
             else{
                 for (File f : dir.listFiles()) {
-                    if (f.isFile() && !f.getName().equals(PATIENT_DEVICE_IDS_FILE_PATH))
-                        mListAdapter.add(f.getName()+"\n"+getFileSize(f.length()));
+                    if (f.isFile() && !f.getName().equals(PATIENT_DEVICE_IDS_FILE_PATH)) {
+                        mListAdapter.add(formatDate(f.getName()) + "\n" + getFileSize(f.length()));
+                        mFNameList.add(f.getName());
+                    }
                 }
             }
         }
@@ -122,20 +134,30 @@ public class History extends Activity {
         return size;
     }
 
-    private String getFilePath(int pos){
-        String item = mListAdapter.getItem(pos);//Get item from list adapter
-        String fn = item.substring(0, item.indexOf('\n'));//Get filename from item string
-        return android.os.Environment.getExternalStorageDirectory()+
-                mDirName+"/"+fn;
-    }
-
     private void deletePPGFile(AdapterContextMenuInfo info){
-        File f = new File(getFilePath(info.position));
+        File f = new File(android.os.Environment.getExternalStorageDirectory()
+                            + mDirName + "/" + mFNameList.get(info.position));
         if(f.delete()) {
             mListAdapter.remove(mListAdapter.getItem(info.position));
-            showMessage("PPG record deleted");
+            mFNameList.remove(info.position);
+            showMessage("Record deleted");
         }else
             showMessage("Problem deleting record");
+    }
+
+    private String formatDate(String fName){
+        Date date;
+        String res;
+        SimpleDateFormat df = new SimpleDateFormat("yyMMddHHmmss", Locale.US);
+        String sub = fName.substring((fName.indexOf('_') + 1), fName.indexOf('.'));
+        try{
+            date = df.parse(sub);
+            String str = new SimpleDateFormat("EE, dd MMM yyyy HH:mm:ss", Locale.US).format(date.getTime());
+            res = fName.substring(0, fName.indexOf('_')) + "\n" + str ;
+        }catch(ParseException pE){
+            res = fName;
+        }
+        return res;
     }
 
     private void showMessage(String msg) {

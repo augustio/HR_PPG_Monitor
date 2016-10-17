@@ -199,7 +199,7 @@ public class MainActivity extends Activity {
         mGraphViewActive = true;
     }
 
-    //Plot a new set of two PPG values on the graph and present on the GUI
+    //Plot a new PPG value on the graph and present on the GUI
     private void updateGraph(int value) {
         if(mCounter > X_RANGE){
             mCounter = 0;
@@ -226,8 +226,10 @@ public class MainActivity extends Activity {
             double sum = (mAvHr*mHrCounter) + value;
             mHrCounter++;
             mAvHr = (int)Math.round(sum/mHrCounter);
-            avHrView.setText(mAvHr + "BPM");
-            hrView.setText(value + "BPM");
+            String hr = value + " BPM";
+            String av = mAvHr + " BPM";
+            avHrView.setText(av);
+            hrView.setText(hr);
         } else {
             hrView.setText(" ");
             avHrView.setText(" ");
@@ -246,7 +248,7 @@ public class MainActivity extends Activity {
     }
     ;
     private void resetGUIComponents(){
-        btnConnectDisconnect.setText("Connect");
+        btnConnectDisconnect.setText(R.string.connect);
         btnHistory.setEnabled(true);
         ((TextView) findViewById(R.id.deviceName)).setText(R.string.no_device);
         patientId.setText("");
@@ -277,10 +279,11 @@ public class MainActivity extends Activity {
                 runOnUiThread(new Runnable() {
                     public void run() {
                         Log.d(TAG, "CONNECT_MSG");
-                        btnConnectDisconnect.setText("Disconnect");
+                        btnConnectDisconnect.setText(R.string.disconnect);
                         btnHistory.setEnabled(false);
                         patientId.setText(mPatientId);
-                        ((TextView) findViewById(R.id.deviceName)).setText(mDevice.getName() + "- Connected");
+                        String str = mDevice.getName() + "- Connected";
+                        ((TextView) findViewById(R.id.deviceName)).setText(str);
                         mState = CONNECTED;
                     }
                 });
@@ -485,7 +488,7 @@ public class MainActivity extends Activity {
     }
 
     private void updateTimer(){
-        mTimerString = mTimerString.format("%02d:%02d:%02d", hr,min,sec);
+        mTimerString = String.format("%02d:%02d:%02d", hr,min,sec);
         ((TextView) findViewById(R.id.timer_view)).setText(mTimerString);
     }
 
